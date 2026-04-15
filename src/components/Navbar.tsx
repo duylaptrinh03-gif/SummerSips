@@ -7,9 +7,9 @@ import { useCart } from "@/context/CartContext";
 
 const navItems = [
   { label: "Trang Chủ", href: "/" },
-  { label: "Đồ Uống", href: "/shop" },
-  { label: "Giỏ Hàng", href: "/cart" },
-  { label: "Đơn Hàng", href: "/orders" },
+  { label: "Đồ Uống", href: "/do-uong" },
+  { label: "Giỏ Hàng", href: "/gio-hang" },
+  { label: "Đơn Hàng", href: "/don-hang" },
 ];
 
 export default function Navbar() {
