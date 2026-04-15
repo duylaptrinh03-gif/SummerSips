@@ -96,18 +96,19 @@ export default function Footer() {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <span>📍</span>
-                <span>123 Đường Nhiệt Đới, TP. Hồ Chí Minh</span>
+                <span>Số 5c, Ngách 21 Ngõ 595 Lĩnh Nam
+                  Phường Lĩnh Nam, Quận Hoàng Mai, Hà Nộ</span>
               </li>
               <li className="flex items-center gap-2">
                 <span>📞</span>
                 <a href="tel:+84901234567" className="hover:text-orange-400 transition-colors">
-                  0901 234 567
+                  0367647419
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <span>✉️</span>
-                <a href="mailto:xin.chao@summersips.vn" className="hover:text-orange-400 transition-colors">
-                  xin.chao@summersips.vn
+                <a href="mailto:summersips@gmail.com" className="hover:text-orange-400 transition-colors">
+                  summersips@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-2">

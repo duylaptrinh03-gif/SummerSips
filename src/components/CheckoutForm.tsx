@@ -60,11 +60,10 @@ export default function CheckoutForm() {
           value={form.customerName}
           onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
           placeholder="Nguyễn Văn A"
-          className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-            errors.customerName
+          className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${errors.customerName
               ? "border-red-300 focus:ring-red-200 bg-red-50"
               : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
-          }`}
+            }`}
         />
         {errors.customerName && (
           <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -83,12 +82,11 @@ export default function CheckoutForm() {
           type="tel"
           value={form.phone}
           onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          placeholder="0901 234 567"
-          className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${
-            errors.phone
+          placeholder="0367647419"
+          className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${errors.phone
               ? "border-red-300 focus:ring-red-200 bg-red-50"
               : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
-          }`}
+            }`}
         />
         {errors.phone && (
           <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
