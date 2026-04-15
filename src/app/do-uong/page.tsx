@@ -44,7 +44,7 @@ export default function ShopPage() {
       {totalCount > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-full max-w-sm px-4 animate-[fadeInUp_0.3s_ease-out]">
           <Link
-            href="/cart"
+            href="/gio-hang"
             id="shop-floating-cart"
             className="flex items-center justify-between w-full px-5 py-3.5 bg-gray-900 text-white rounded-2xl shadow-2xl shadow-gray-900/40 hover:bg-gray-800 transition-all duration-200"
           >

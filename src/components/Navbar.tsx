@@ -92,9 +92,9 @@ export default function Navbar() {
           <div className="flex items-center gap-2 md:hidden">
             {/* Mobile Cart Button (Compact) */}
             <Link
-              href="/cart"
+              href="/gio-hang"
               className={`p-2.5 rounded-xl transition-all relative ${
-                pathname === "/cart" ? "bg-orange-50 text-orange-500" : "text-gray-500"
+                pathname === "/gio-hang" ? "bg-orange-50 text-orange-500" : "text-gray-500"
               }`}
             >
               <span className="text-xl">🛒</span>

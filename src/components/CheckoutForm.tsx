@@ -44,7 +44,7 @@ export default function CheckoutForm() {
 
     saveOrder(order);
     clearCart();
-    router.push(`/orders?new=${order.id}`);
+    router.push(`/don-hang?new=${order.id}`);
   };
 
   return (
@@ -61,8 +61,8 @@ export default function CheckoutForm() {
           onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
           placeholder="Nguyễn Văn A"
           className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${errors.customerName
-              ? "border-red-300 focus:ring-red-200 bg-red-50"
-              : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
+            ? "border-red-300 focus:ring-red-200 bg-red-50"
+            : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
             }`}
         />
         {errors.customerName && (
@@ -84,8 +84,8 @@ export default function CheckoutForm() {
           onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
           placeholder="0367647419"
           className={`w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 transition-all ${errors.phone
-              ? "border-red-300 focus:ring-red-200 bg-red-50"
-              : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
+            ? "border-red-300 focus:ring-red-200 bg-red-50"
+            : "border-gray-200 focus:ring-orange-200 focus:border-orange-400 bg-white"
             }`}
         />
         {errors.phone && (
