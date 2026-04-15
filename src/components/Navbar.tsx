@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 
 const navItems = [
   { label: "Trang Chủ", href: "/" },
-  { label: "Đặt Hàng", href: "/shop" },
+  { label: "Đồ Uống", href: "/shop" },
   { label: "Giỏ Hàng", href: "/cart" },
   { label: "Đơn Hàng", href: "/orders" },
 ];
