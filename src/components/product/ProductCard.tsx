@@ -51,7 +51,7 @@ export function ProductCard({ drink, onClick }: ProductCardProps) {
         {!drink.isAvailable && (
           <div className="absolute inset-0 bg-white/50 backdrop-blur-[2px] flex items-center justify-center z-10">
             <span className="px-4 py-2 bg-gray-900 text-white rounded-full font-bold text-sm">
-              Tạm hết hàng
+              Tạm hết hàng 
             </span>
           </div>
         )}
