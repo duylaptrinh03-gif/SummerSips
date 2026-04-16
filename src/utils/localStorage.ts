@@ -1,7 +1,8 @@
-import { CartItem, Order } from "@/types/order";
+import { CartItem } from "@/types/cart";
+import { Order } from "@/types/order";
 
-const CART_KEY = "summersips_cart";
-const ORDERS_KEY = "summersips_orders";
+const CART_KEY = "summersips_cart_v2";
+const ORDERS_KEY = "summersips_orders_v2";
 
 // ── CART ──────────────────────────────────────────────────────────────────────
 
@@ -20,7 +21,7 @@ export function saveCart(cart: CartItem[]): void {
   localStorage.setItem(CART_KEY, JSON.stringify(cart));
 }
 
-export function clearCart(): void {
+export function clearCartStorage(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(CART_KEY);
 }
@@ -40,6 +41,11 @@ export function getOrders(): Order[] {
 export function saveOrder(order: Order): void {
   if (typeof window === "undefined") return;
   const orders = getOrders();
-  orders.unshift(order); // newest first
+  orders.unshift(order); // Mới nhất lên đầu
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+}
+
+export function clearAllOrders(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(ORDERS_KEY);
 }

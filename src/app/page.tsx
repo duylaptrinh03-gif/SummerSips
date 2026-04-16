@@ -6,10 +6,10 @@ import Testimonial from "@/components/Testimonial";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
-import { shopDrinks } from "@/data/shopDrinks";
+import { drinks } from "@/data/drinks";
 
-// Top 3 đồ uống bán chạy nhất (hiển thị tĩnh, không đặt được)
-const bestSellers = shopDrinks.slice(0, 3);
+// Top 3 đồ uống nổi bật
+const bestSellers = drinks.filter(d => d.tag === "Bán Chạy" || d.tag === "Yêu Thích").slice(0, 3);
 
 // Số liệu thống kê tổng quan
 const stats = [
@@ -111,7 +111,7 @@ export default function Home() {
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-lg font-black bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-                        {drink.price.toLocaleString("vi-VN")}đ
+                        {drink.basePrice.toLocaleString("vi-VN")}đ
                       </span>
                       {/* Popularity bar */}
                       <div className="flex items-center gap-1 text-xs text-gray-400">
@@ -137,7 +137,7 @@ export default function Home() {
                 Muốn thử ngay những hương vị trên?
               </p>
               <Link
-                href="/shop"
+                href="/thuc-don"
                 id="home-goto-shop"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-base rounded-full hover:shadow-xl hover:shadow-orange-300/50 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
               >

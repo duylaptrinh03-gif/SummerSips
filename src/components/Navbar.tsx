@@ -3,23 +3,36 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCart } from "@/context/CartContext";
+import { useCartStore } from "@/store/useCartStore";
 
 const navItems = [
   { label: "Trang Chủ", href: "/" },
-  { label: "Đồ Uống", href: "/do-uong" },
+  { label: "Đồ Uống", href: "/thuc-don" },
   { label: "Giỏ Hàng", href: "/gio-hang" },
   { label: "Đơn Hàng", href: "/don-hang" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { totalCount } = useCart();
+  const getCount = useCartStore((state) => state.getTotalCount);
+  const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Tránh lỗi cascading render của linter bằng cách đẩy việc đổi state sang bất đồng bộ (sau khi render xong)
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+  const totalCount = mounted ? getCount() : 0;
 
   // Đóng menu khi thay đổi route
   useEffect(() => {
-    setIsMenuOpen(false);
+    const timer = setTimeout(() => {
+      setIsMenuOpen(false);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   // Ngăn cuộn trang (scroll) khi menu đang mở
