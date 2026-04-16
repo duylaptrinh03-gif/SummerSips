@@ -44,20 +44,6 @@ export const drinks: Drink[] = [
     toppingOptions: TOPPINGS_CA_PHE,
   },
   {
-    id: 2,
-    name: "Cà Phê Đen Đá",
-    basePrice: 20000,
-    image:
-      "https://images.unsplash.com/photo-1517701604599-bb2101166687?w=600&auto=format&fit=crop&q=80",
-    description:
-      "Cà phê đen nguyên chất, không pha trộn. Vị đắng nhẹ, hậu vị thơm ngát cho người yêu cà phê thuần.",
-    category: "Cà Phê",
-    tag: "Bán Chạy",
-    isAvailable: true,
-    sizeOptions: SIZES_DEFAULT,
-    toppingOptions: TOPPINGS_CA_PHE,
-  },
-  {
     id: 3,
     name: "Bạc Xỉu",
     basePrice: 28000,
