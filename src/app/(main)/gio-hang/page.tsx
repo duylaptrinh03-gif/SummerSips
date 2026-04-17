@@ -10,7 +10,7 @@ import { orderService } from "@/services/orderService";
 import { taoMaDonHang } from "@/utils/formatter";
 import { useToastStore } from "@/store/useToastStore";
 
-export default function GioHangPage() {
+export default function PageCart() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const items = useCartStore((state) => state.items);
@@ -103,7 +103,7 @@ export default function GioHangPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6"
-           style={{ background: "var(--bg-secondary)" }}>
+        style={{ background: "var(--bg-secondary)" }}>
         <span className="text-8xl mb-6 opacity-80" style={{ animation: "blob 4s infinite alternate" }}>🛒</span>
         <h1 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>Giỏ hàng trống</h1>
         <p className="mb-8 max-w-sm text-center" style={{ color: "var(--text-secondary)" }}>
@@ -112,7 +112,11 @@ export default function GioHangPage() {
         <Link
           href="/thuc-don"
           className="px-8 py-4 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl"
-          style={{ background: "var(--text-primary)", color: "var(--bg-primary)" }}
+          style={{
+            background: "linear-gradient(135deg, #f97316, #ec4899)",
+            color: "white",
+            boxShadow: "0 8px 24px rgba(249,115,22,0.35)",
+          }}
         >
           Tiếp tục chọn món
         </Link>
@@ -195,7 +199,7 @@ export default function GioHangPage() {
 
                 {rawTotal < FREE_SHIP_THRESHOLD && !isFreeShip && (
                   <div className="text-xs px-3 py-2 rounded-xl"
-                       style={{ background: "rgba(249,115,22,0.08)", color: "var(--brand-orange)" }}>
+                    style={{ background: "rgba(249,115,22,0.08)", color: "var(--brand-orange)" }}>
                     🚚 Thêm {formatGia(FREE_SHIP_THRESHOLD - rawTotal)} để được miễn phí giao hàng!
                   </div>
                 )}

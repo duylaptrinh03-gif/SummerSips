@@ -2,18 +2,37 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic"; // Thêm dynamic import từ Next.js
 import { useCartStore } from "@/store/useCartStore";
 import { drinkService } from "@/services/drinkService";
 import { Drink, Category } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategoryTabs } from "@/components/product/CategoryTabs";
-import { ProductModal } from "@/components/product/ProductModal";
-import { SearchBar } from "@/components/ui/SearchBar";
-import { SortDropdown } from "@/components/ui/SortDropdown";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { formatGia } from "@/utils/formatter";
 import { SortKey } from "@/types/ui";
 import { motion, AnimatePresence } from "framer-motion";
+
+// --- DYNAMIC IMPORTS ---
+// Tách các component này ra khỏi bundle chính để giảm dung lượng file ban đầu.
+
+const SearchBar = dynamic(
+  () => import("@/components/ui/SearchBar").then((mod) => mod.SearchBar),
+  { ssr: false }
+);
+
+const SortDropdown = dynamic(
+  () => import("@/components/ui/SortDropdown").then((mod) => mod.SortDropdown),
+  { ssr: false }
+);
+
+const ProductModal = dynamic(
+  () => import("@/components/product/ProductModal").then((mod) => mod.ProductModal),
+  {
+    ssr: false,
+    loading: () => <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]" />
+  }
+);
 
 const CATEGORIES: Category[] = [
   "Tất cả",
@@ -24,28 +43,30 @@ const CATEGORIES: Category[] = [
   "Nước Ép",
 ];
 
-export default function ThucDonPage() {
+export default function PageDrink() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<Category>("Tất cả");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("default");
 
-  // Modal
+  // Modal State
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
-  // Floating Cart
+  // Floating Cart Logic
   const getCount = useCartStore((state) => state.getTotalCount);
   const getFinalTotal = useCartStore((state) => state.getFinalTotal);
   const [mounted, setMounted] = useState(false);
+
   const totalCount = mounted ? getCount() : 0;
   const totalPrice = mounted ? getFinalTotal() : 0;
 
+  // Hydration fix
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0);
-    return () => clearTimeout(timer);
+    setMounted(true);
   }, []);
 
+  // Fetch Data
   useEffect(() => {
     const fetchMenu = async () => {
       setLoading(true);
@@ -61,7 +82,7 @@ export default function ThucDonPage() {
     fetchMenu();
   }, []);
 
-  // Count per category (for badges)
+  // Memoized calculations
   const categoryCounts = useMemo(() => {
     const counts: Partial<Record<Category, number>> = {};
     CATEGORIES.forEach((cat) => {
@@ -72,16 +93,13 @@ export default function ThucDonPage() {
     return counts;
   }, [drinks]);
 
-  // Filter + sort
   const filteredDrinks = useMemo(() => {
-    let result = drinks;
+    let result = [...drinks];
 
-    // Category filter
     if (activeCategory !== "Tất cả") {
       result = result.filter((d) => d.category === activeCategory);
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(
@@ -92,21 +110,18 @@ export default function ThucDonPage() {
       );
     }
 
-    // Sort
     switch (sortKey) {
       case "price_asc":
-        result = [...result].sort((a, b) => a.basePrice - b.basePrice);
+        result.sort((a, b) => a.basePrice - b.basePrice);
         break;
       case "price_desc":
-        result = [...result].sort((a, b) => b.basePrice - a.basePrice);
+        result.sort((a, b) => b.basePrice - a.basePrice);
         break;
       case "name_asc":
-        result = [...result].sort((a, b) => a.name.localeCompare(b.name, "vi"));
+        result.sort((a, b) => a.name.localeCompare(b.name, "vi"));
         break;
       case "popular":
-        result = [...result].sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0));
-        break;
-      default:
+        result.sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0));
         break;
     }
 
@@ -129,7 +144,7 @@ export default function ThucDonPage() {
             🌊 Thực Đơn Tiêu Chuẩn Điểm 10
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight"
-              style={{ color: "var(--text-primary)" }}>
+            style={{ color: "var(--text-primary)" }}>
             Chọn Đồ Uống{" "}
             <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
               Yêu Thích Của Bạn
@@ -142,12 +157,11 @@ export default function ThucDonPage() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* ── Sticky Filters ── */}
+        {/* Sticky Filters */}
         <div
           className="sticky top-14 z-[40] pt-3 pb-3 mb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 backdrop-blur-md"
           style={{ background: "var(--bg-secondary)dd" }}
         >
-          {/* Category tabs */}
           <CategoryTabs
             categories={CATEGORIES}
             activeCategory={activeCategory}
@@ -155,7 +169,6 @@ export default function ThucDonPage() {
             counts={categoryCounts}
           />
 
-          {/* Search + Sort row */}
           <div className="flex gap-3 mt-3">
             <SearchBar onSearch={setSearchQuery} />
             <SortDropdown value={sortKey} onChange={setSortKey} />
@@ -218,9 +231,9 @@ export default function ThucDonPage() {
         </AnimatePresence>
       </main>
 
-      {/* Floating Cart */}
+      {/* Floating Cart Section */}
       <AnimatePresence>
-        {totalCount > 0 && (
+        {mounted && totalCount > 0 && (
           <motion.div
             initial={{ y: 150, x: "-50%" }}
             animate={{ y: 0, x: "-50%" }}
@@ -250,15 +263,17 @@ export default function ThucDonPage() {
         )}
       </AnimatePresence>
 
-      {/* Modal */}
-      {selectedDrink && (
-        <ProductModal
-          key={selectedDrink.id}
-          isOpen={true}
-          drink={selectedDrink}
-          onClose={() => setSelectedDrink(null)}
-        />
-      )}
+      {/* Dynamic Modal Section */}
+      <AnimatePresence>
+        {selectedDrink && (
+          <ProductModal
+            key={selectedDrink.id}
+            isOpen={true}
+            drink={selectedDrink}
+            onClose={() => setSelectedDrink(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

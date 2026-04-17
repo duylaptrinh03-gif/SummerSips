@@ -86,7 +86,7 @@ function OrdersContent() {
   );
 }
 
-export default function DonHangPage() {
+export default function PageOrder() {
   return (
     <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
