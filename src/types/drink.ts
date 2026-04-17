@@ -33,6 +33,9 @@ export interface Drink {
   category: Category;
   tag?: string;         // "Bán Chạy", "Mới", "Yêu Thích"…
   isAvailable: boolean;
+  rating?: number;      // 1–5 (tùy chọn)
+  soldCount?: number;   // Số lượng đã bán (tùy chọn)
   sizeOptions: SizeOption[];
   toppingOptions: ToppingOption[];
 }
+

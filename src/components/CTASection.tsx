@@ -86,7 +86,7 @@ export default function CTASection() {
 
         <div className="mt-10">
           <Link
-            href="#drinks"
+            href="/thuc-don"
             id="cta-order-now"
             className="inline-flex items-center gap-2 px-8 py-4 bg-white/20 backdrop-blur-sm border border-white/40 text-white font-bold text-lg rounded-full hover:bg-white/30 hover:scale-105 active:scale-95 transition-all duration-200"
           >

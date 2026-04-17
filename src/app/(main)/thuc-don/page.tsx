@@ -8,8 +8,11 @@ import { Drink, Category } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategoryTabs } from "@/components/product/CategoryTabs";
 import { ProductModal } from "@/components/product/ProductModal";
-import { Loader } from "@/components/ui/Loader";
+import { SearchBar } from "@/components/ui/SearchBar";
+import { SortDropdown } from "@/components/ui/SortDropdown";
+import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { formatGia } from "@/utils/formatter";
+import { SortKey } from "@/types/ui";
 import { motion, AnimatePresence } from "framer-motion";
 
 const CATEGORIES: Category[] = [
@@ -25,15 +28,18 @@ export default function ThucDonPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<Category>("Tất cả");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("default");
 
-  // Modal logic
+  // Modal
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
   // Floating Cart
   const getCount = useCartStore((state) => state.getTotalCount);
+  const getFinalTotal = useCartStore((state) => state.getFinalTotal);
   const [mounted, setMounted] = useState(false);
   const totalCount = mounted ? getCount() : 0;
-  const totalPrice = useCartStore((state) => mounted ? state.getTotalPrice() : 0);
+  const totalPrice = mounted ? getFinalTotal() : 0;
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -44,7 +50,6 @@ export default function ThucDonPage() {
     const fetchMenu = async () => {
       setLoading(true);
       try {
-        // Luôn fetch tất cả để filter ở client cho mượt
         const data = await drinkService.getDrinks("Tất cả");
         setDrinks(data);
       } catch (error) {
@@ -54,17 +59,67 @@ export default function ThucDonPage() {
       }
     };
     fetchMenu();
-  }, []); // Chỉ fetch một lần duy nhất khi mount
+  }, []);
 
+  // Count per category (for badges)
+  const categoryCounts = useMemo(() => {
+    const counts: Partial<Record<Category, number>> = {};
+    CATEGORIES.forEach((cat) => {
+      counts[cat] = cat === "Tất cả"
+        ? drinks.length
+        : drinks.filter((d) => d.category === cat).length;
+    });
+    return counts;
+  }, [drinks]);
+
+  // Filter + sort
   const filteredDrinks = useMemo(() => {
-    if (activeCategory === "Tất cả") return drinks;
-    return drinks.filter((d) => d.category === activeCategory);
-  }, [drinks, activeCategory]);
+    let result = drinks;
+
+    // Category filter
+    if (activeCategory !== "Tất cả") {
+      result = result.filter((d) => d.category === activeCategory);
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (d) =>
+          d.name.toLowerCase().includes(q) ||
+          d.description.toLowerCase().includes(q) ||
+          d.category.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort
+    switch (sortKey) {
+      case "price_asc":
+        result = [...result].sort((a, b) => a.basePrice - b.basePrice);
+        break;
+      case "price_desc":
+        result = [...result].sort((a, b) => b.basePrice - a.basePrice);
+        break;
+      case "name_asc":
+        result = [...result].sort((a, b) => a.name.localeCompare(b.name, "vi"));
+        break;
+      case "popular":
+        result = [...result].sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0));
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }, [drinks, activeCategory, searchQuery, sortKey]);
 
   return (
-    <div className="bg-zinc-50 min-h-screen pb-40">
+    <div className="min-h-screen pb-40" style={{ background: "var(--bg-secondary)" }}>
       {/* Header Banner */}
-      <section className="bg-gradient-to-br from-orange-50 via-white to-pink-50 py-16 px-4 text-center">
+      <section
+        className="py-16 px-4 text-center"
+        style={{ background: "linear-gradient(135deg, var(--bg-primary) 0%, #fff7ed 50%, var(--bg-primary) 100%)" }}
+      >
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -73,43 +128,56 @@ export default function ThucDonPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold mb-6">
             🌊 Thực Đơn Tiêu Chuẩn Điểm 10
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 mb-6 leading-tight tracking-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight"
+              style={{ color: "var(--text-primary)" }}>
             Chọn Đồ Uống{" "}
             <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
               Yêu Thích Của Bạn
             </span>
           </h1>
-          <p className="text-gray-500 text-lg">
+          <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
             Hương vị tươi mát, pha chế mới mỗi trưa hè.
           </p>
         </motion.div>
       </section>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Lọc danh mục */}
-        <div className="sticky top-16 z-[40] bg-zinc-50/90 backdrop-blur-md pt-4 pb-4 mb-4">
+        {/* ── Sticky Filters ── */}
+        <div
+          className="sticky top-14 z-[40] pt-3 pb-3 mb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 backdrop-blur-md"
+          style={{ background: "var(--bg-secondary)dd" }}
+        >
+          {/* Category tabs */}
           <CategoryTabs
             categories={CATEGORIES}
             activeCategory={activeCategory}
             onChange={setActiveCategory}
+            counts={categoryCounts}
           />
+
+          {/* Search + Sort row */}
+          <div className="flex gap-3 mt-3">
+            <SearchBar onSearch={setSearchQuery} />
+            <SortDropdown value={sortKey} onChange={setSortKey} />
+          </div>
         </div>
 
-        {/* Danh sách */}
+        {/* Results count */}
+        {!loading && (
+          <p className="text-sm font-medium mb-4" style={{ color: "var(--text-muted)" }}>
+            {filteredDrinks.length} sản phẩm{searchQuery && ` cho "${searchQuery}"`}
+          </p>
+        )}
+
+        {/* Product Grid */}
         <AnimatePresence mode="popLayout">
           {loading ? (
-            <motion.div
-              key="loader"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="col-span-full"
-            >
-              <Loader />
+            <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <ProductGridSkeleton count={8} />
             </motion.div>
           ) : filteredDrinks.length > 0 ? (
             <motion.div
-              key={activeCategory} // Key bám theo category để có hiệu ứng chuyển
+              key={`${activeCategory}-${sortKey}`}
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
@@ -130,18 +198,27 @@ export default function ThucDonPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20 opacity-50"
+              className="flex flex-col items-center justify-center py-24 gap-4"
             >
-              <span className="text-6xl mb-4">😿</span>
-              <p className="text-xl font-bold text-gray-500">
-                Không tìm thấy món nào!
+              <span className="text-7xl">🔍</span>
+              <h3 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+                Không tìm thấy kết quả
+              </h3>
+              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+                Thử tìm với từ khóa khác hoặc chọn danh mục khác
               </p>
+              <button
+                onClick={() => { setSearchQuery(""); setActiveCategory("Tất cả"); setSortKey("default"); }}
+                className="px-6 py-2.5 rounded-xl font-semibold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+              >
+                Xóa bộ lọc
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Floating cart (Chỉ hiện khi có item) */}
+      {/* Floating Cart */}
       <AnimatePresence>
         {totalCount > 0 && (
           <motion.div
@@ -153,7 +230,8 @@ export default function ThucDonPage() {
           >
             <Link
               href="/gio-hang"
-              className="flex items-center justify-between w-full px-5 py-4 bg-gray-900 text-white rounded-2xl shadow-2xl shadow-gray-900/30 hover:bg-black transition-all hover:scale-[1.02] active:scale-95 group"
+              className="flex items-center justify-between w-full px-5 py-4 rounded-2xl shadow-2xl shadow-gray-900/30 hover:scale-[1.02] active:scale-95 group transition-all"
+              style={{ background: "var(--text-primary)", color: "var(--bg-primary)" }}
             >
               <div className="flex items-center gap-3">
                 <div className="relative w-8 h-8 flex justify-center items-center">
@@ -175,6 +253,7 @@ export default function ThucDonPage() {
       {/* Modal */}
       {selectedDrink && (
         <ProductModal
+          key={selectedDrink.id}
           isOpen={true}
           drink={selectedDrink}
           onClose={() => setSelectedDrink(null)}

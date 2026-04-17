@@ -1,7 +1,10 @@
+"use client";
+
 import { Order, TRANG_THAI_LABEL } from "@/types/order";
 import { formatNgayGio, formatGia } from "@/utils/formatter";
 import { calculateItemPrice } from "@/types/cart";
 import Image from "next/image";
+import { OrderTimeline } from "./OrderTimeline";
 
 interface OrderCardProps {
   order: Order;
@@ -9,92 +12,111 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, isNew }: OrderCardProps) {
-  // Config styles cho từng trạng thái
-  const statusConfig: Record<string, string> = {
-    cho_xac_nhan: "bg-amber-100 text-amber-700 border-amber-200",
-    dang_pha_che: "bg-blue-100 text-blue-700 border-blue-200",
-    dang_giao: "bg-purple-100 text-purple-700 border-purple-200",
-    hoan_thanh: "bg-green-100 text-green-700 border-green-200",
-    da_huy: "bg-red-100 text-red-700 border-red-200",
+  const statusConfig: Record<string, { cls: string; dot: string }> = {
+    cho_xac_nhan: { cls: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-400" },
+    dang_pha_che: { cls: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-400" },
+    dang_giao:    { cls: "bg-violet-100 text-violet-700 border-violet-200", dot: "bg-violet-400" },
+    hoan_thanh:   { cls: "bg-emerald-100 text-emerald-700 border-emerald-200", dot: "bg-emerald-400" },
+    da_huy:       { cls: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-400" },
   };
 
-  const statusClass = statusConfig[order.trangThai] || "bg-gray-100 text-gray-700";
+  const cfg = statusConfig[order.trangThai] ?? { cls: "bg-gray-100 text-gray-700 border-gray-200", dot: "bg-gray-400" };
   const isPending = order.trangThai === "cho_xac_nhan" || order.trangThai === "dang_pha_che";
 
   return (
     <div
-      className={`bg-white rounded-3xl overflow-hidden shadow-sm border ${
-        isNew ? "border-orange-300 shadow-orange-100" : "border-gray-100"
-      }`}
+      className={`rounded-3xl overflow-hidden border transition-all`}
+      style={{
+        background: "var(--bg-card)",
+        borderColor: isNew ? "#f97316" : "var(--border-color)",
+        boxShadow: isNew ? "0 0 0 2px rgba(249,115,22,0.15), var(--shadow-md)" : "var(--shadow-sm)",
+      }}
     >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 bg-gray-50/50 border-b border-gray-100">
+      <div
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 border-b"
+        style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}
+      >
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-mono font-bold text-gray-500 uppercase">
+            <span className="text-xs font-mono font-bold" style={{ color: "var(--text-muted)" }}>
               {order.id}
             </span>
             {isNew && (
-              <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-orange-500 text-white animate-pulse">
+              <span className="px-2 py-0.5 text-[10px] font-black rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white animate-pulse">
                 MỚI
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
             {formatNgayGio(order.taoLuc)}
           </p>
         </div>
 
         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
-          <span className="text-xs text-gray-400 hidden sm:block">Tổng cộng</span>
-          <span className="font-black text-xl text-gray-900">
+          <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>Tổng cộng</span>
+          <span className="font-black text-xl bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
             {formatGia(order.tongTien)}
           </span>
         </div>
       </div>
 
-      {/* Thông tin giao hàng */}
-      <div className="px-5 py-4 border-b border-gray-50">
+      {/* Timeline */}
+      {order.trangThai !== "da_huy" && (
+        <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border-color)" }}>
+          <p className="text-[11px] font-black uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+            Trạng thái đơn hàng
+          </p>
+          <OrderTimeline currentStatus={order.trangThai} />
+        </div>
+      )}
+
+      {/* Delivery info */}
+      <div className="px-5 py-4 border-b" style={{ borderColor: "var(--border-color)" }}>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <div className="flex items-center gap-2 text-gray-600">
-            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100">👤</span>
-            <span className="font-semibold">{order.thongTinNhan.hoTen}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100">📞</span>
-            <span className="font-medium">{order.thongTinNhan.soDienThoai}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600 w-full sm:w-auto mt-1 sm:mt-0">
-            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 shrink-0">📍</span>
-            <span className="font-medium line-clamp-1">{order.thongTinNhan.diaChi}</span>
-          </div>
+          {[
+            { icon: "👤", value: order.thongTinNhan.hoTen },
+            { icon: "📞", value: order.thongTinNhan.soDienThoai },
+            { icon: "📍", value: order.thongTinNhan.diaChi },
+          ].map((info, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <span className="w-6 h-6 flex items-center justify-center rounded-full text-sm"
+                    style={{ background: "var(--bg-secondary)" }}>
+                {info.icon}
+              </span>
+              <span className="font-medium" style={{ color: "var(--text-secondary)" }}>{info.value}</span>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Items */}
-      <div className="px-5 py-4 bg-white">
-        <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">
-          Chi tiết đơn
+      <div className="px-5 py-4">
+        <p className="text-[11px] font-black uppercase tracking-widest mb-4" style={{ color: "var(--text-muted)" }}>
+          Chi tiết đơn ({order.items.length} sản phẩm)
         </p>
         <div className="space-y-4">
           {order.items.map((item) => (
             <div key={item.cartId} className="flex gap-3">
-              <div className="relative w-12 h-12 rounded-xl bg-gray-50 overflow-hidden shrink-0 border border-gray-100">
+              <div
+                className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border"
+                style={{ borderColor: "var(--border-color)", background: "var(--bg-secondary)" }}
+              >
                 <Image src={item.image} alt={item.name} fill className="object-cover" />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <p className="font-bold text-gray-900 text-sm">
-                    <span className="text-orange-500 mr-1">{item.quantity}x</span> 
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
+                    <span className="text-orange-500 mr-1">{item.quantity}x</span>
                     {item.name}
                   </p>
-                  <span className="font-bold text-gray-700 text-sm">
+                  <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
                     {formatGia(calculateItemPrice(item))}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                   Size {item.size}, Đá {item.iceLevel}%, Đường {item.sugarLevel}%
-                   {item.toppings.length > 0 && `, ${item.toppings.map(t => t.name).join(", ")}`}
+                <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "var(--text-muted)" }}>
+                  Size {item.size}, Đá {item.iceLevel}%, Đường {item.sugarLevel}%
+                  {item.toppings.length > 0 && `, ${item.toppings.map(t => t.name).join(", ")}`}
                 </p>
               </div>
             </div>
@@ -103,12 +125,15 @@ export function OrderCard({ order, isNew }: OrderCardProps) {
       </div>
 
       {/* Status Footer */}
-      <div className="px-5 py-4 border-t border-gray-50 bg-gray-50/30 flex items-center justify-between">
-        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${statusClass}`}>
+      <div
+        className="px-5 py-4 border-t flex items-center justify-between"
+        style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}
+      >
+        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.cls}`}>
           {isPending && (
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 currentColor"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 currentColor"></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${cfg.dot} opacity-75`} />
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`} />
             </span>
           )}
           {TRANG_THAI_LABEL[order.trangThai]}

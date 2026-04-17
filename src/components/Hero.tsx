@@ -41,12 +41,12 @@ export default function Hero() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-[fadeInUp_1s_ease-out]">
           <Link
-            href="#drinks"
+            href="/thuc-don"
             id="hero-cta-shop"
             className="group relative px-8 py-4 bg-gradient-to-r from-orange-500 to-pink-500 text-white font-bold text-lg rounded-full shadow-lg shadow-orange-300/50 hover:shadow-orange-400/60 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
           >
             <span className="relative z-10 flex items-center gap-2">
-              Mua Ngay
+              Mua Ngay 🛒
               <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
@@ -54,12 +54,22 @@ export default function Hero() {
             <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Link>
           <Link
-            href="#features"
+            href="/#features"
             id="hero-cta-learn"
             className="px-8 py-4 bg-white/80 backdrop-blur-sm text-gray-700 font-bold text-lg rounded-full border border-white shadow-md hover:bg-white hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
           >
             Khám Phá Thêm ✨
           </Link>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="mt-16 flex flex-col items-center gap-2 opacity-60">
+          <p className="text-xs text-gray-500 font-medium">Cuộn để khám phá</p>
+          <div style={{ animation: "scroll-indicator 1.5s ease-in-out infinite" }}>
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
 
         {/* Stats row */}

@@ -1,35 +1,74 @@
 "use client";
 
+import { useRef } from "react";
 import { Category } from "@/types/drink";
-import { motion } from "framer-motion";
+
+const CATEGORY_ICONS: Record<Category, string> = {
+  "Tất cả": "🌈",
+  "Cà Phê": "☕",
+  "Trà Sữa": "🧋",
+  "Trà Trái Cây": "🍑",
+  "Sinh Tố": "🥤",
+  "Nước Ép": "🍊",
+};
 
 interface CategoryTabsProps {
   categories: Category[];
   activeCategory: Category;
   onChange: (category: Category) => void;
+  counts?: Partial<Record<Category, number>>;
 }
 
-export function CategoryTabs({ categories, activeCategory, onChange }: CategoryTabsProps) {
+export function CategoryTabs({ categories, activeCategory, onChange, counts }: CategoryTabsProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = (cat: Category) => {
+    onChange(cat);
+    // Auto-scroll active tab into view on mobile
+    const btn = containerRef.current?.querySelector(`[data-cat="${cat}"]`);
+    btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  };
+
   return (
-    <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-      {categories.map((category) => {
-        const isActive = activeCategory === category;
+    <div
+      ref={containerRef}
+      className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide"
+      role="tablist"
+      aria-label="Danh mục đồ uống"
+    >
+      {categories.map((cat) => {
+        const isActive = cat === activeCategory;
+        const count = counts?.[cat];
         return (
           <button
-            key={category}
-            onClick={() => onChange(category)}
-            className={`relative px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
-              isActive ? "text-white" : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-100 shadow-sm"
+            key={cat}
+            data-cat={cat}
+            role="tab"
+            aria-selected={isActive}
+            id={`category-tab-${cat.replace(/\s+/g, "-").toLowerCase()}`}
+            onClick={() => handleClick(cat)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap shrink-0 transition-all duration-200 border ${
+              isActive
+                ? "bg-gradient-to-r from-orange-500 to-pink-500 text-white border-transparent shadow-md shadow-orange-200/50"
+                : "border-transparent hover:-translate-y-0.5"
             }`}
+            style={
+              isActive
+                ? {}
+                : { background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-secondary)" }
+            }
           >
-            {isActive && (
-              <motion.div
-                layoutId="active-category"
-                className="absolute inset-0 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
+            <span>{CATEGORY_ICONS[cat]}</span>
+            <span>{cat}</span>
+            {count !== undefined && count > 0 && (
+              <span
+                className={`text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none ${
+                  isActive ? "bg-white/25 text-white" : "bg-orange-100 text-orange-600"
+                }`}
+              >
+                {count}
+              </span>
             )}
-            <span className="relative z-10">{category}</span>
           </button>
         );
       })}

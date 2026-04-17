@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Drink, SizeOption, ToppingOption, SizeName } from "@/types/drink";
+import { Drink, ToppingOption, SizeName } from "@/types/drink";
 import { CartItem } from "@/types/cart";
 import { formatGia, taoCartId } from "@/utils/formatter";
 import { QuantityControl } from "../ui/QuantityControl";
 import { useCartStore } from "@/store/useCartStore";
+import { useToastStore } from "@/store/useToastStore";
 
 interface ProductModalProps {
   drink: Drink;
@@ -17,6 +18,7 @@ interface ProductModalProps {
 
 export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
   const addItem = useCartStore((state) => state.addItem);
+  const addToast = useToastStore((s) => s.addToast);
 
   // Tính toán size mặc định (Size có extraPrice === 0 hoặc size đầu tiên)
   const defaultSize = drink.sizeOptions.find(s => s.extraPrice === 0)?.name || drink.sizeOptions[0]?.name || "S";
@@ -28,8 +30,6 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
   const [selectedToppings, setSelectedToppings] = useState<ToppingOption[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
-
-
 
   // Ngăn scroll ở trang ngoài khi modal bật
   useEffect(() => {
@@ -44,7 +44,7 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
   const currentSizeObj = drink.sizeOptions.find((s) => s.name === selectedSize);
   const sizeExtra = currentSizeObj?.extraPrice || 0;
   const toppingTotal = selectedToppings.reduce((sum, t) => sum + t.price, 0);
-  
+
   const unitPrice = drink.basePrice + sizeExtra + toppingTotal;
   const totalPrice = unitPrice * quantity;
 
@@ -76,8 +76,10 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
     };
 
     addItem(newItem);
+    addToast(`🛒 Đã thêm ${drink.name} vào giỏ hàng!`, "success");
     onClose();
   };
+
 
   return (
     <AnimatePresence>
@@ -147,11 +149,10 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                       <button
                         key={sz.name}
                         onClick={() => setSelectedSize(sz.name)}
-                        className={`flex flex-col items-center p-3 rounded-2xl border-2 transition-all ${
-                          selectedSize === sz.name
+                        className={`flex flex-col items-center p-3 rounded-2xl border-2 transition-all ${selectedSize === sz.name
                             ? "border-orange-500 bg-orange-50 text-orange-600"
                             : "border-gray-100 text-gray-600 hover:border-gray-200"
-                        }`}
+                          }`}
                       >
                         <span className="font-bold mb-1">{sz.label}</span>
                         <span className="text-xs opacity-80">
@@ -172,9 +173,8 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                       <button
                         key={`da-${val}`}
                         onClick={() => setIceLevel(val)}
-                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                          iceLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                        }`}
+                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${iceLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                          }`}
                       >
                         {val}%
                       </button>
@@ -189,9 +189,8 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                       <button
                         key={`duong-${val}`}
                         onClick={() => setSugarLevel(val)}
-                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                          sugarLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                        }`}
+                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${sugarLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                          }`}
                       >
                         {val}%
                       </button>
@@ -210,11 +209,10 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                       return (
                         <label
                           key={top.id}
-                          className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                            isSelected
+                          className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
                               ? "border-pink-500 bg-pink-50"
                               : "border-gray-100 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             <input
@@ -246,7 +244,7 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                   rows={2}
                 />
               </div>
-              
+
               {/* Padding for sticky footer */}
               <div className="h-4"></div>
             </div>
@@ -254,8 +252,8 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
 
           {/* Footer - Checkout Add */}
           <div className="border-t border-gray-100 bg-white p-4 sm:p-6 pb-safe flex items-center justify-between gap-6 relative z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-            <QuantityControl quantity={quantity} onIncrease={() => setQuantity(q => q+1)} onDecrease={() => setQuantity(q => q-1)} />
-            
+            <QuantityControl quantity={quantity} onIncrease={() => setQuantity(q => q + 1)} onDecrease={() => setQuantity(q => q - 1)} />
+
             <button
               onClick={handleAddToCart}
               className="flex-1 max-w-[300px] h-14 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-orange-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all"
