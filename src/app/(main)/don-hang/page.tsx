@@ -16,6 +16,7 @@ function OrdersContent() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
 
