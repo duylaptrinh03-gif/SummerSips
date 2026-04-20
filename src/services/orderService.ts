@@ -4,9 +4,9 @@ import {
   CreateOrderPayload,
   UpdateOrderStatusPayload,
 } from "@/types/order";
+import { ApiResponse } from "@/types/api";
 
 // ── Raw backend response shape (matches current backend schema) ───────────
-// Backend now uses English field names throughout
 interface RawOrderResponse {
   _id: string;
   orderId: string;            // e.g. "ORD-1713161234567"
@@ -50,27 +50,43 @@ export const orderService = {
    * POST /orders
    * Create a new order.
    */
-  async createOrder(payload: CreateOrderPayload): Promise<Order> {
-    const { data } = await axiosInstance.post<RawOrderResponse>("/orders", payload);
-    return mapOrder(data);
+  async createOrder(payload: CreateOrderPayload): Promise<ApiResponse<Order>> {
+    const response = await axiosInstance.post<unknown, ApiResponse<RawOrderResponse>>(
+      "/orders",
+      payload
+    );
+    return {
+      ...response, // Giữ lại statusCode, message, totalResult...
+      data: mapOrder(response.data), // Ghi đè data đã được map
+    };
   },
 
   /**
    * GET /orders
    * Fetch all orders.
    */
-  async getAllOrders(): Promise<Order[]> {
-    const { data } = await axiosInstance.get<RawOrderResponse[]>("/orders");
-    return data.map(mapOrder);
+  async getAllOrders(): Promise<ApiResponse<Order[]>> {
+    const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse[]>>(
+      "/orders"
+    );
+    return {
+      ...response,
+      data: response.data.map(mapOrder),
+    };
   },
 
   /**
    * GET /orders/:id
-   * Fetch a single order (supports both MongoDB _id and orderId "ORD-xxx").
+   * Fetch a single order.
    */
-  async getOrderById(id: string): Promise<Order> {
-    const { data } = await axiosInstance.get<RawOrderResponse>(`/orders/${id}`);
-    return mapOrder(data);
+  async getOrderById(id: string): Promise<ApiResponse<Order>> {
+    const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse>>(
+      `/orders/${id}`
+    );
+    return {
+      ...response,
+      data: mapOrder(response.data),
+    };
   },
 
   /**
@@ -80,11 +96,14 @@ export const orderService = {
   async updateOrderStatus(
     id: string,
     payload: UpdateOrderStatusPayload
-  ): Promise<Order> {
-    const { data } = await axiosInstance.patch<RawOrderResponse>(
+  ): Promise<ApiResponse<Order>> {
+    const response = await axiosInstance.patch<unknown, ApiResponse<RawOrderResponse>>(
       `/orders/${id}/status`,
       { status: payload.status }
     );
-    return mapOrder(data);
+    return {
+      ...response,
+      data: mapOrder(response.data),
+    };
   },
 };

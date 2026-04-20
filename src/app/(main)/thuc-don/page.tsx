@@ -35,8 +35,13 @@ export default function PageDrink() {
     setError(null);
     try {
       const res = await drinkService.getDrinks();
-      setDrinks(res);
+      if (res.statusCode === 200) {
+        setDrinks(res.data);
+      } else {
+        setDrinks([]);
+      }
     } catch (err) {
+      setDrinks([]);
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi tải thực đơn.");
     } finally {
       setIsLoading(false);

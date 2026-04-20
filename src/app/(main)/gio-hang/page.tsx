@@ -95,7 +95,7 @@ export default function PageCart() {
       const createdOrder = await orderService.createOrder(payload);
       clearCart();
       addToast("🎉 Đặt hàng thành công!", "success");
-      router.push(`/don-hang?new=${createdOrder.id}`);
+      router.push(`/don-hang?new=${createdOrder.data.id}`);
     } catch (err) {
       const message =
         err instanceof Error

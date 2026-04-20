@@ -4,27 +4,25 @@ import {
   CreateDrinkPayload,
   UpdateDrinkPayload,
 } from "@/types/drink";
-import { DrinkQueryParams } from "@/types/api";
+import { DrinkQueryParams, ApiResponse } from "@/types/api";
 
 /**
  * Service layer cho resource Drinks.
- * Tất cả API calls đi qua axiosInstance — KHÔNG gọi trực tiếp trong component.
+ * Trả về full object ApiResponse ({ statusCode, message, data })
  */
 export const drinkService = {
   /**
    * GET /drinks
-   * Lấy danh sách đồ uống — hỗ trợ filter, search, sort, limit
    */
-  async getDrinks(params?: DrinkQueryParams): Promise<Drink[]> {
-    const { data } = await axiosInstance.get<Drink[]>("/drinks", { params });
-    return data;
+  async getDrinks(params?: DrinkQueryParams): Promise<ApiResponse<Drink[]>> {
+    // Return trực tiếp, truyền generic thứ 2 để ép kiểu Promise trả về ApiResponse
+    return axiosInstance.get<unknown, ApiResponse<Drink[]>>("/drinks", { params });
   },
 
   /**
    * GET /drinks?category=<category>
-   * Lấy theo danh mục (convenience wrapper)
    */
-  async getDrinksByCategory(category: string): Promise<Drink[]> {
+  async getDrinksByCategory(category: string): Promise<ApiResponse<Drink[]>> {
     if (category === "Tất cả") {
       return drinkService.getDrinks();
     }
@@ -33,26 +31,27 @@ export const drinkService = {
 
   /**
    * GET /drinks/:id
-   * Lấy chi tiết 1 đồ uống theo MongoDB _id
    */
-  async getDrinkById(id: string): Promise<Drink> {
-    const { data } = await axiosInstance.get<Drink>(`/drinks/${id}`);
-    return data;
+  async getDrinkById(id: string): Promise<ApiResponse<Drink>> {
+    return axiosInstance.get<unknown, ApiResponse<Drink>>(`/drinks/${id}`);
   },
 
   /**
    * GET /drinks?tag=Bán Chạy&limit=n
-   * Lấy sản phẩm nổi bật (Bán Chạy / Yêu Thích)
+   * Lưu ý: Hàm này bạn setup trả về mảng Drink[] chứ không phải ApiResponse
    */
   async getFeaturedDrinks(limit: number = 4): Promise<Drink[]> {
-    const [banChay, yeuThich] = await Promise.allSettled([
+    const [banChayRes, yeuThichRes] = await Promise.allSettled([
       drinkService.getDrinks({ tag: "Bán Chạy", limit }),
       drinkService.getDrinks({ tag: "Yêu Thích", limit }),
     ]);
 
     const results: Drink[] = [];
-    if (banChay.status === "fulfilled") results.push(...banChay.value);
-    if (yeuThich.status === "fulfilled") results.push(...yeuThich.value);
+    
+    // Vì banChayRes.value lúc này là object 3 trường (ApiResponse), 
+    // nên ta cần chọc vào .data để lấy mảng Drink[] add vào results
+    if (banChayRes.status === "fulfilled") results.push(...banChayRes.value.data);
+    if (yeuThichRes.status === "fulfilled") results.push(...yeuThichRes.value.data);
 
     // Dedup và giới hạn
     const seen = new Set<string>();
@@ -67,27 +66,22 @@ export const drinkService = {
 
   /**
    * POST /drinks
-   * Tạo sản phẩm mới (Admin)
    */
-  async createDrink(payload: CreateDrinkPayload): Promise<Drink> {
-    const { data } = await axiosInstance.post<Drink>("/drinks", payload);
-    return data;
+  async createDrink(payload: CreateDrinkPayload): Promise<ApiResponse<Drink>> {
+    return axiosInstance.post<unknown, ApiResponse<Drink>>("/drinks", payload);
   },
 
   /**
    * PATCH /drinks/:id
-   * Cập nhật sản phẩm (Admin)
    */
-  async updateDrink(id: string, payload: UpdateDrinkPayload): Promise<Drink> {
-    const { data } = await axiosInstance.patch<Drink>(`/drinks/${id}`, payload);
-    return data;
+  async updateDrink(id: string, payload: UpdateDrinkPayload): Promise<ApiResponse<Drink>> {
+    return axiosInstance.patch<unknown, ApiResponse<Drink>>(`/drinks/${id}`, payload);
   },
 
   /**
    * DELETE /drinks/:id
-   * Xóa sản phẩm (Admin)
    */
-  async deleteDrink(id: string): Promise<void> {
-    await axiosInstance.delete(`/drinks/${id}`);
+  async deleteDrink(id: string): Promise<ApiResponse<void>> {
+    return axiosInstance.delete<unknown, ApiResponse<void>>(`/drinks/${id}`);
   },
 };

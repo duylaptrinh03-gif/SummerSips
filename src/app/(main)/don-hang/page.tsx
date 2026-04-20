@@ -23,10 +23,14 @@ function OrdersContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await orderService.getAllOrders();
-      setOrders(data);
+      const res = await orderService.getAllOrders();
+      if (res.statusCode === 200) {
+        setOrders(res.data);
+      } else {
+        setOrders([]);
+      }
     } catch (err) {
-      console.log(err)
+      setOrders([]);
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi kết nối đến máy chủ.");
     } finally {
       setIsLoading(false);

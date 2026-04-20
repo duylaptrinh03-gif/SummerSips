@@ -29,7 +29,7 @@ export function BestSellerSection() {
 
   useEffect(() => {
     drinkService.getDrinks()
-      .then((data) => setDrinks(data.slice(0, 3)))
+      .then((res) => setDrinks(res.data.slice(0, 3)))
       .catch(() => setDrinks([]))
       .finally(() => setIsLoading(false));
   }, []);

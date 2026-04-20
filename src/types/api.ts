@@ -6,9 +6,10 @@ export interface ApiError {
   error?: string;
 }
 
-export interface ApiSuccessResponse<T> {
+export interface ApiResponse<T> {
+  statusCode: number;
   data: T;
-  message?: string;
+  totalResult?: number;
 }
 
 // ── Query Params for /drinks ──────────────────────────────────────────────
