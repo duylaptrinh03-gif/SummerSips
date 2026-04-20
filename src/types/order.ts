@@ -1,32 +1,48 @@
 import { CartItem } from "./cart";
 
-export type TrangThaiDonHang =
-  | "cho_xac_nhan"   // Chờ xác nhận
-  | "dang_pha_che"   // Đang pha chế
-  | "dang_giao"      // Đang giao
-  | "hoan_thanh"     // Hoàn thành
-  | "da_huy";        // Đã hủy
+// ── Order status — matches backend OrderStatus enum ───────────────────────
+export type OrderStatus =
+  | "pending"     // Chờ xác nhận
+  | "preparing"   // Đang pha chế
+  | "delivering"  // Đang giao hàng
+  | "completed"   // Hoàn thành
+  | "cancelled";  // Đã hủy
 
-export interface ThongTinNhan {
-  hoTen: string;
-  soDienThoai: string;
-  diaChi: string;       // Địa chỉ giao hàng
+// ── Recipient / delivery info ─────────────────────────────────────────────
+export interface RecipientInfo {
+  fullName: string;
+  phoneNumber: string;
+  address: string;
 }
 
+// ── Order (matches backend Order schema) ──────────────────────────────────
 export interface Order {
-  id: string;                   // e.g. "ORD-1713161234567"
+  _id: string;
+  id: string;               // Readable code — mapped from backend orderId
   items: CartItem[];
-  thongTinNhan: ThongTinNhan;
-  tongTien: number;
-  trangThai: TrangThaiDonHang;
-  taoLuc: string;               // ISO string
+  recipientInfo: RecipientInfo;
+  totalAmount: number;      // Mapped from backend totalPrice
+  status: OrderStatus;
+  createdAt: string;        // Mapped from backend orderedAt
+  updatedAt?: string;
 }
 
-// Label hiển thị cho từng trạng thái
-export const TRANG_THAI_LABEL: Record<TrangThaiDonHang, string> = {
-  cho_xac_nhan: "Chờ xác nhận",
-  dang_pha_che: "Đang pha chế",
-  dang_giao: "Đang giao hàng",
-  hoan_thanh: "Hoàn thành",
-  da_huy: "Đã hủy",
+// ── Payload to create an order (POST /orders) ─────────────────────────────
+export interface CreateOrderPayload {
+  recipientInfo: RecipientInfo;
+  items: CartItem[];
+}
+
+// ── Payload to update order status (Admin — PATCH /orders/:id/status) ─────
+export interface UpdateOrderStatusPayload {
+  status: OrderStatus;
+}
+
+// ── Display labels for each status value ─────────────────────────────────
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pending:    "Chờ xác nhận",
+  preparing:  "Đang pha chế",
+  delivering: "Đang giao hàng",
+  completed:  "Hoàn thành",
+  cancelled:  "Đã hủy",
 };

@@ -23,9 +23,9 @@ export interface ToppingOption {
   price: number;        // Giá của topping (VNĐ)
 }
 
-// ── Sản phẩm chính ────────────────────────────────────────────────────────
+// ── Sản phẩm chính (khớp backend Product schema) ───────────────────────────
 export interface Drink {
-  id: number;
+  _id: string;          // MongoDB ObjectId (string) — dùng làm key chính
   name: string;
   basePrice: number;    // Giá cơ bản (size S)
   image: string;
@@ -37,5 +37,23 @@ export interface Drink {
   soldCount?: number;   // Số lượng đã bán (tùy chọn)
   sizeOptions: SizeOption[];
   toppingOptions: ToppingOption[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
+// ── Payload tạo / cập nhật sản phẩm (Admin) ──────────────────────────────
+export interface CreateDrinkPayload {
+  name: string;
+  basePrice: number;
+  image?: string;
+  description?: string;
+  category: string;
+  tag?: string;
+  isAvailable?: boolean;
+  rating?: number;
+  soldCount?: number;
+  sizeOptions?: SizeOption[];
+  toppingOptions?: ToppingOption[];
+}
+
+export type UpdateDrinkPayload = Partial<CreateDrinkPayload>;

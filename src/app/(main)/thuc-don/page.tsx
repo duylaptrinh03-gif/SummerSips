@@ -1,132 +1,79 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic"; // Thêm dynamic import từ Next.js
+import dynamic from "next/dynamic";
 import { useCartStore } from "@/store/useCartStore";
 import { drinkService } from "@/services/drinkService";
-import { Drink, Category } from "@/types/drink";
+import { Drink } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
-import { CategoryTabs } from "@/components/product/CategoryTabs";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { formatGia } from "@/utils/formatter";
-import { SortKey } from "@/types/ui";
 import { motion, AnimatePresence } from "framer-motion";
-
-// --- DYNAMIC IMPORTS ---
-// Tách các component này ra khỏi bundle chính để giảm dung lượng file ban đầu.
-
-const SearchBar = dynamic(
-  () => import("@/components/ui/SearchBar").then((mod) => mod.SearchBar),
-  { ssr: false }
-);
-
-const SortDropdown = dynamic(
-  () => import("@/components/ui/SortDropdown").then((mod) => mod.SortDropdown),
-  { ssr: false }
-);
 
 const ProductModal = dynamic(
   () => import("@/components/product/ProductModal").then((mod) => mod.ProductModal),
   {
     ssr: false,
-    loading: () => <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]" />
+    loading: () => <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[100]" />,
   }
 );
 
-const CATEGORIES: Category[] = [
-  "Tất cả",
-  "Cà Phê",
-  "Trà Sữa",
-  "Trà Trái Cây",
-  "Sinh Tố",
-  "Nước Ép",
-];
-
 export default function PageDrink() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<Category>("Tất cả");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("default");
-
-  // Modal State
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
-  // Floating Cart Logic
-  const getCount = useCartStore((state) => state.getTotalCount);
+  const getTotalCount = useCartStore((state) => state.getTotalCount);
   const getFinalTotal = useCartStore((state) => state.getFinalTotal);
-  const [mounted, setMounted] = useState(false);
+  const totalCount = getTotalCount();
+  const totalPrice = getFinalTotal();
 
-  const totalCount = mounted ? getCount() : 0;
-  const totalPrice = mounted ? getFinalTotal() : 0;
+  const fetchDrinks = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await drinkService.getDrinks();
+      setDrinks(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi tải thực đơn.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  // Hydration fix
   useEffect(() => {
-    setMounted(true);
+    fetchDrinks();
   }, []);
 
-  // Fetch Data
-  useEffect(() => {
-    const fetchMenu = async () => {
-      setLoading(true);
-      try {
-        const data = await drinkService.getDrinks("Tất cả");
-        setDrinks(data);
-      } catch (error) {
-        console.error("Failed to fetch drinks", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMenu();
-  }, []);
+  console.log(error)
 
-  // Memoized calculations
-  const categoryCounts = useMemo(() => {
-    const counts: Partial<Record<Category, number>> = {};
-    CATEGORIES.forEach((cat) => {
-      counts[cat] = cat === "Tất cả"
-        ? drinks.length
-        : drinks.filter((d) => d.category === cat).length;
-    });
-    return counts;
-  }, [drinks]);
-
-  const filteredDrinks = useMemo(() => {
-    let result = [...drinks];
-
-    if (activeCategory !== "Tất cả") {
-      result = result.filter((d) => d.category === activeCategory);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.description.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q)
-      );
-    }
-
-    switch (sortKey) {
-      case "price_asc":
-        result.sort((a, b) => a.basePrice - b.basePrice);
-        break;
-      case "price_desc":
-        result.sort((a, b) => b.basePrice - a.basePrice);
-        break;
-      case "name_asc":
-        result.sort((a, b) => a.name.localeCompare(b.name, "vi"));
-        break;
-      case "popular":
-        result.sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0));
-        break;
-    }
-
-    return result;
-  }, [drinks, activeCategory, searchQuery, sortKey]);
+  // ── Error state ──────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-6 p-8"
+        style={{ background: "var(--bg-secondary)" }}
+      >
+        <span className="text-7xl">😵</span>
+        <div className="text-center">
+          <h2 className="text-xl font-black mb-2" style={{ color: "var(--text-primary)" }}>
+            Không thể tải thực đơn
+          </h2>
+          <p className="text-sm mb-6 max-w-sm" style={{ color: "var(--text-secondary)" }}>
+            {error}
+          </p>
+          <button
+            onClick={fetchDrinks}
+            className="px-6 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-40" style={{ background: "var(--bg-secondary)" }}>
@@ -143,8 +90,10 @@ export default function PageDrink() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold mb-6">
             🌊 Thực Đơn Tiêu Chuẩn Điểm 10
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight"
-            style={{ color: "var(--text-primary)" }}>
+          <h1
+            className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
             Chọn Đồ Uống{" "}
             <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
               Yêu Thích Của Bạn
@@ -157,83 +106,42 @@ export default function PageDrink() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Sticky Filters */}
-        <div
-          className="sticky top-14 z-[40] pt-3 pb-3 mb-6 -mx-4 px-4 sm:-mx-6 sm:px-6 backdrop-blur-md"
-          style={{ background: "var(--bg-secondary)dd" }}
-        >
-          <CategoryTabs
-            categories={CATEGORIES}
-            activeCategory={activeCategory}
-            onChange={setActiveCategory}
-            counts={categoryCounts}
-          />
-
-          <div className="flex gap-3 mt-3">
-            <SearchBar onSearch={setSearchQuery} />
-            <SortDropdown value={sortKey} onChange={setSortKey} />
-          </div>
-        </div>
-
-        {/* Results count */}
-        {!loading && (
+        {/* Count */}
+        {!isLoading && (
           <p className="text-sm font-medium mb-4" style={{ color: "var(--text-muted)" }}>
-            {filteredDrinks.length} sản phẩm{searchQuery && ` cho "${searchQuery}"`}
+            {drinks.length} sản phẩm
           </p>
         )}
 
         {/* Product Grid */}
         <AnimatePresence mode="popLayout">
-          {loading ? (
+          {isLoading ? (
             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ProductGridSkeleton count={8} />
             </motion.div>
-          ) : filteredDrinks.length > 0 ? (
+          ) : (
             <motion.div
-              key={`${activeCategory}-${sortKey}`}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
+              key="grid"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {filteredDrinks.map((drink) => (
+              {drinks.map((drink) => (
                 <ProductCard
-                  key={drink.id}
+                  key={drink._id}
                   drink={drink}
                   onClick={(d) => setSelectedDrink(d)}
                 />
               ))}
             </motion.div>
-          ) : (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-24 gap-4"
-            >
-              <span className="text-7xl">🔍</span>
-              <h3 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
-                Không tìm thấy kết quả
-              </h3>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                Thử tìm với từ khóa khác hoặc chọn danh mục khác
-              </p>
-              <button
-                onClick={() => { setSearchQuery(""); setActiveCategory("Tất cả"); setSortKey("default"); }}
-                className="px-6 py-2.5 rounded-xl font-semibold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-              >
-                Xóa bộ lọc
-              </button>
-            </motion.div>
           )}
         </AnimatePresence>
       </main>
 
-      {/* Floating Cart Section */}
+      {/* Floating Cart */}
       <AnimatePresence>
-        {mounted && totalCount > 0 && (
+        {totalCount > 0 && (
           <motion.div
             initial={{ y: 150, x: "-50%" }}
             animate={{ y: 0, x: "-50%" }}
@@ -255,19 +163,17 @@ export default function PageDrink() {
                 </div>
                 <span className="font-bold text-sm tracking-wide">Xem giỏ hàng</span>
               </div>
-              <span className="font-black text-orange-400 text-lg">
-                {formatGia(totalPrice)}
-              </span>
+              <span className="font-black text-orange-400 text-lg">{formatGia(totalPrice)}</span>
             </Link>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Dynamic Modal Section */}
+      {/* Product Modal */}
       <AnimatePresence>
         {selectedDrink && (
           <ProductModal
-            key={selectedDrink.id}
+            key={selectedDrink._id}
             isOpen={true}
             drink={selectedDrink}
             onClose={() => setSelectedDrink(null)}

@@ -32,11 +32,11 @@ export default function RootLayout({
     <html lang="vi" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col" style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}>
         <ThemeProvider>
-          <ToastProvider>
-            {children}
-            <BackToTop />
-          </ToastProvider>
-        </ThemeProvider>
+            <ToastProvider>
+              {children}
+              <BackToTop />
+            </ToastProvider>
+          </ThemeProvider>
       </body>
     </html>
   );

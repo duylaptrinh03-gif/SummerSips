@@ -7,12 +7,15 @@ import { useCartStore, DELIVERY_FEE, FREE_SHIP_THRESHOLD } from "@/store/useCart
 import { CartItemCard } from "@/components/cart/CartItemCard";
 import { formatGia } from "@/utils/formatter";
 import { orderService } from "@/services/orderService";
-import { taoMaDonHang } from "@/utils/formatter";
 import { useToastStore } from "@/store/useToastStore";
+import { CreateOrderPayload } from "@/types/order";
 
 export default function PageCart() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Cart state ──────────────────────────────────────────────────────────
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const couponCode = useCartStore((state) => state.couponCode);
@@ -35,13 +38,12 @@ export default function PageCart() {
   const deliveryFee = mounted ? getDeliveryFee() : 0;
   const finalTotal = mounted ? getFinalTotal() : 0;
 
-  // Form state
-  const [hoTen, setHoTen] = useState("");
-  const [soDienThoai, setSoDienThoai] = useState("");
-  const [diaChi, setDiaChi] = useState("");
+  // ── Form state ──────────────────────────────────────────────────────────
+  const [fullName, setFullName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
   const [couponInput, setCouponInput] = useState("");
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -59,64 +61,72 @@ export default function PageCart() {
     }
   };
 
+  const validateForm = (): boolean => {
+    if (!fullName.trim() || !phoneNumber.trim() || !address.trim()) {
+      setFormError("Vui lòng điền đầy đủ thông tin giao hàng!");
+      return false;
+    }
+    const phoneRegex = /^(0|\+84)[0-9]{8,10}$/;
+    if (!phoneRegex.test(phoneNumber.replace(/\s+/g, ""))) {
+      setFormError("Số điện thoại không hợp lệ!");
+      return false;
+    }
+    setFormError("");
+    return true;
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!hoTen.trim() || !soDienThoai.trim() || !diaChi.trim()) {
-      setError("Vui lòng điền đầy đủ thông tin giao hàng!");
-      return;
-    }
+    if (!validateForm()) return;
 
-    const phoneRegex = /^(0|\+84)[0-9]{8,10}$/;
-    if (!phoneRegex.test(soDienThoai.replace(/\s+/g, ""))) {
-      setError("Số điện thoại không hợp lệ!");
-      return;
-    }
-
-    setError("");
     setIsSubmitting(true);
+    setFormError("");
+
+    const payload: CreateOrderPayload = {
+      recipientInfo: {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        address: address.trim(),
+      },
+      items,
+    };
 
     try {
-      const newOrder = {
-        id: taoMaDonHang(),
-        items: items,
-        thongTinNhan: {
-          hoTen: hoTen.trim(),
-          soDienThoai: soDienThoai.trim(),
-          diaChi: diaChi.trim(),
-        },
-        tongTien: finalTotal,
-        trangThai: "cho_xac_nhan" as const,
-        taoLuc: new Date().toISOString(),
-      };
-
-      await orderService.createOrder(newOrder);
+      const createdOrder = await orderService.createOrder(payload);
       clearCart();
-      router.push(`/don-hang?new=${newOrder.id}`);
-    } catch {
-      setError("Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại!");
+      addToast("🎉 Đặt hàng thành công!", "success");
+      router.push(`/don-hang?new=${createdOrder.id}`);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại!";
+      setFormError(message);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   if (!mounted) return null;
 
+  // ── Empty cart ──────────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6"
-        style={{ background: "var(--bg-secondary)" }}>
-        <span className="text-8xl mb-6 opacity-80" style={{ animation: "blob 4s infinite alternate" }}>🛒</span>
-        <h1 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>Giỏ hàng trống</h1>
+      <div
+        className="min-h-[80vh] flex flex-col items-center justify-center p-6"
+        style={{ background: "var(--bg-secondary)" }}
+      >
+        <span className="text-8xl mb-6 opacity-80">🛒</span>
+        <h1 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>
+          Giỏ hàng trống
+        </h1>
         <p className="mb-8 max-w-sm text-center" style={{ color: "var(--text-secondary)" }}>
           Một ly trà sữa không thể thay đổi thế giới, nhưng nó làm ngày của bạn vui hơn. Đặt ngay nhé!
         </p>
         <Link
           href="/thuc-don"
           className="px-8 py-4 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl"
-          style={{
-            background: "linear-gradient(135deg, #f97316, #ec4899)",
-            color: "white",
-            boxShadow: "0 8px 24px rgba(249,115,22,0.35)",
-          }}
+          style={{ background: "linear-gradient(135deg, #f97316, #ec4899)", color: "white" }}
         >
           Tiếp tục chọn món
         </Link>
@@ -130,8 +140,12 @@ export default function PageCart() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>Giỏ Hàng</h1>
-            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>{totalCount} sản phẩm</p>
+            <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>
+              Giỏ Hàng
+            </h1>
+            <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
+              {totalCount} sản phẩm
+            </p>
           </div>
           <button
             onClick={clearCart}
@@ -142,12 +156,11 @@ export default function PageCart() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* List Items */}
+          {/* Cart items */}
           <div className="flex-1 space-y-4">
             {items.map((item) => (
               <CartItemCard key={item.cartId} item={item} />
             ))}
-
             <Link
               href="/thuc-don"
               className="inline-flex items-center gap-2 text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors mt-4 p-2 rounded-lg hover:bg-orange-50"
@@ -156,35 +169,42 @@ export default function PageCart() {
             </Link>
           </div>
 
-          {/* Checkout Block */}
+          {/* Checkout sidebar */}
           <div className="w-full lg:w-[420px] shrink-0">
             <div
               className="rounded-3xl p-6 sm:p-8 sticky top-24 border"
-              style={{ background: "var(--bg-card)", borderColor: "var(--border-color)", boxShadow: "var(--shadow-md)" }}
+              style={{
+                background: "var(--bg-card)",
+                borderColor: "var(--border-color)",
+                boxShadow: "var(--shadow-md)",
+              }}
             >
-              <h2 className="text-xl font-black mb-6" style={{ color: "var(--text-primary)" }}>Thanh Toán</h2>
+              <h2 className="text-xl font-black mb-6" style={{ color: "var(--text-primary)" }}>
+                Thanh Toán
+              </h2>
 
               {/* Order summary */}
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-sm">
                   <span style={{ color: "var(--text-secondary)" }}>Tạm tính</span>
-                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{formatGia(rawTotal)}</span>
+                  <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                    {formatGia(rawTotal)}
+                  </span>
                 </div>
 
                 {discountPercent > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-emerald-600">Giảm giá ({discountPercent}%)</span>
-                    <span className="font-semibold text-emerald-600">-{formatGia(rawTotal - subtotal)}</span>
+                    <span className="font-semibold text-emerald-600">
+                      -{formatGia(rawTotal - subtotal)}
+                    </span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-sm">
                   <span style={{ color: "var(--text-secondary)" }}>
                     Phí giao hàng
-                    {rawTotal >= FREE_SHIP_THRESHOLD && !isFreeShip && (
-                      <span className="ml-1 text-emerald-500 font-semibold">(Miễn phí)</span>
-                    )}
-                    {isFreeShip && (
+                    {(rawTotal >= FREE_SHIP_THRESHOLD || isFreeShip) && (
                       <span className="ml-1 text-emerald-500 font-semibold">(Miễn phí)</span>
                     )}
                   </span>
@@ -198,8 +218,10 @@ export default function PageCart() {
                 </div>
 
                 {rawTotal < FREE_SHIP_THRESHOLD && !isFreeShip && (
-                  <div className="text-xs px-3 py-2 rounded-xl"
-                    style={{ background: "rgba(249,115,22,0.08)", color: "var(--brand-orange)" }}>
+                  <div
+                    className="text-xs px-3 py-2 rounded-xl"
+                    style={{ background: "rgba(249,115,22,0.08)", color: "var(--brand-orange)" }}
+                  >
                     🚚 Thêm {formatGia(FREE_SHIP_THRESHOLD - rawTotal)} để được miễn phí giao hàng!
                   </div>
                 )}
@@ -207,14 +229,16 @@ export default function PageCart() {
                 <div className="h-px my-2" style={{ background: "var(--border-color)" }} />
 
                 <div className="flex justify-between items-center">
-                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>Tổng cộng</span>
+                  <span className="font-bold" style={{ color: "var(--text-primary)" }}>
+                    Tổng cộng
+                  </span>
                   <span className="font-black text-2xl bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
                     {formatGia(finalTotal)}
                   </span>
                 </div>
               </div>
 
-              {/* Coupon code */}
+              {/* Coupon */}
               <div className="mb-5">
                 {couponCode ? (
                   <div className="flex items-center justify-between px-4 py-3 rounded-2xl border border-emerald-200 bg-emerald-50">
@@ -227,7 +251,12 @@ export default function PageCart() {
                         </p>
                       </div>
                     </div>
-                    <button onClick={removeCoupon} className="text-sm text-red-400 hover:text-red-600 font-bold transition-colors">✕</button>
+                    <button
+                      onClick={removeCoupon}
+                      className="text-sm text-red-400 hover:text-red-600 font-bold transition-colors"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
@@ -238,7 +267,11 @@ export default function PageCart() {
                       onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
                       placeholder="Nhập mã khuyến mãi..."
                       className="flex-1 px-4 py-2.5 text-sm rounded-xl border outline-none transition-all focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                      style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+                      style={{
+                        background: "var(--bg-secondary)",
+                        borderColor: "var(--border-color)",
+                        color: "var(--text-primary)",
+                      }}
                     />
                     <button
                       onClick={handleApplyCoupon}
@@ -256,55 +289,74 @@ export default function PageCart() {
               {/* Delivery form */}
               <form onSubmit={handleCheckout} className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                  <label htmlFor="fullName" className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                     Người nhận <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="fullName"
                     type="text"
-                    value={hoTen}
-                    onChange={(e) => setHoTen(e.target.value)}
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nguyễn Văn A"
-                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                    style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                    style={{
+                      background: "var(--bg-secondary)",
+                      borderColor: "var(--border-color)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                  <label htmlFor="phoneNumber" className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                     Điện thoại <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="phoneNumber"
                     type="tel"
-                    value={soDienThoai}
-                    onChange={(e) => setSoDienThoai(e.target.value)}
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="09xx xxx xxx"
-                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                    style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                    style={{
+                      background: "var(--bg-secondary)",
+                      borderColor: "var(--border-color)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+                  <label htmlFor="address" className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                     Địa chỉ giao <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="address"
                     type="text"
-                    value={diaChi}
-                    onChange={(e) => setDiaChi(e.target.value)}
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
                     placeholder="Số nhà, Tên đường, Quận, TP"
-                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
-                    style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+                    disabled={isSubmitting}
+                    className="w-full px-4 py-3 rounded-xl border outline-none transition-all text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
+                    style={{
+                      background: "var(--bg-secondary)",
+                      borderColor: "var(--border-color)",
+                      color: "var(--text-primary)",
+                    }}
                   />
                 </div>
 
-                {error && (
+                {formError && (
                   <div className="p-3 bg-red-50 text-red-600 text-sm font-semibold rounded-xl border border-red-100">
-                    ⚠️ {error}
+                    ⚠️ {formError}
                   </div>
                 )}
 
                 <button
                   type="submit"
+                  id="btn-checkout"
                   disabled={isSubmitting || items.length === 0}
                   className="w-full py-4 mt-2 rounded-2xl font-black text-lg flex justify-center items-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                   style={{

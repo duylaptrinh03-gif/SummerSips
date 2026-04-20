@@ -1,59 +1,90 @@
-import { Order, TrangThaiDonHang } from "@/types/order";
-import { getOrders, saveOrder } from "@/utils/localStorage";
+import axiosInstance from "@/lib/axiosInstance";
+import {
+  Order,
+  CreateOrderPayload,
+  UpdateOrderStatusPayload,
+} from "@/types/order";
+
+// ── Raw backend response shape (matches current backend schema) ───────────
+// Backend now uses English field names throughout
+interface RawOrderResponse {
+  _id: string;
+  orderId: string;            // e.g. "ORD-1713161234567"
+  items: Order["items"];
+  recipientInfo: {
+    fullName: string;
+    phoneNumber: string;
+    address: string;
+  };
+  totalPrice: number;         // Backend field name
+  status: Order["status"];    // Backend field name (English enum values)
+  orderedAt: string;          // Backend field name (ISO string)
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// ── Map backend response → FE Order shape ────────────────────────────────
+function mapOrder(raw: RawOrderResponse): Order {
+  return {
+    _id: raw._id,
+    id: raw.orderId,
+    items: raw.items,
+    recipientInfo: {
+      fullName: raw.recipientInfo?.fullName,
+      phoneNumber: raw.recipientInfo?.phoneNumber,
+      address: raw.recipientInfo?.address,
+    },
+    totalAmount: raw.totalPrice,
+    status: raw.status,
+    createdAt: raw.orderedAt ?? raw.createdAt ?? "",
+    updatedAt: raw.updatedAt,
+  };
+}
 
 /**
- * Service quản lý đơn hàng.
- * Hiện tại sử dụng localStorage thông qua `utils/localStorage.ts`.
- * Tương lai sẽ thay bằng các lệnh gọi API thực tế.
+ * Service layer for the Orders resource.
+ * All API calls go through axiosInstance — never call directly from components.
  */
-
-const DELAY = 1000; // Giả lập call API (ms)
-
 export const orderService = {
   /**
-   * Tạo đơn hàng mới
+   * POST /orders
+   * Create a new order.
    */
-  async createOrder(order: Order): Promise<Order> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        saveOrder(order);
-        resolve(order);
-      }, DELAY);
-    });
+  async createOrder(payload: CreateOrderPayload): Promise<Order> {
+    const { data } = await axiosInstance.post<RawOrderResponse>("/orders", payload);
+    return mapOrder(data);
   },
 
   /**
-   * Lấy danh sách toàn bộ đơn hàng
+   * GET /orders
+   * Fetch all orders.
    */
   async getAllOrders(): Promise<Order[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(getOrders());
-      }, DELAY);
-    });
+    const { data } = await axiosInstance.get<RawOrderResponse[]>("/orders");
+    return data.map(mapOrder);
   },
 
   /**
-   * Lấy chi tiết một đơn hàng theo ID
+   * GET /orders/:id
+   * Fetch a single order (supports both MongoDB _id and orderId "ORD-xxx").
    */
-  async getOrderById(id: string): Promise<Order | undefined> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const orders = getOrders();
-        resolve(orders.find(o => o.id === id));
-      }, DELAY);
-    });
+  async getOrderById(id: string): Promise<Order> {
+    const { data } = await axiosInstance.get<RawOrderResponse>(`/orders/${id}`);
+    return mapOrder(data);
   },
 
-   /**
-   * (Tuỳ chọn) Update trạng thái đơn hàng (Ví dụ cho admin panel tương lai)
+  /**
+   * PATCH /orders/:id/status
+   * Update order status — Admin only.
    */
-   async updateOrderStatus(id: string, status: TrangThaiDonHang): Promise<boolean> {
-     return new Promise((resolve) => {
-       setTimeout(() => {
-         // Logic update local storage sẽ phức tạp hơn chút, tạm thời bỏ qua phần logic update chi tiết
-         resolve(true); 
-       }, DELAY);
-     });
-   }
+  async updateOrderStatus(
+    id: string,
+    payload: UpdateOrderStatusPayload
+  ): Promise<Order> {
+    const { data } = await axiosInstance.patch<RawOrderResponse>(
+      `/orders/${id}/status`,
+      { status: payload.status }
+    );
+    return mapOrder(data);
+  },
 };

@@ -20,10 +20,11 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
   const addItem = useCartStore((state) => state.addItem);
   const addToast = useToastStore((s) => s.addToast);
 
-  // Tính toán size mặc định (Size có extraPrice === 0 hoặc size đầu tiên)
-  const defaultSize = drink.sizeOptions.find(s => s.extraPrice === 0)?.name || drink.sizeOptions[0]?.name || "S";
+  const defaultSize =
+    drink?.sizeOptions?.find((s) => s.extraPrice === 0)?.name ||
+    drink?.sizeOptions?.[0]?.name ||
+    "S";
 
-  // States (Tự động khởi tạo lại mỗi khi component Mount)
   const [selectedSize, setSelectedSize] = useState<SizeName>(defaultSize as SizeName);
   const [iceLevel, setIceLevel] = useState<0 | 50 | 100>(100);
   const [sugarLevel, setSugarLevel] = useState<0 | 50 | 100>(100);
@@ -31,7 +32,7 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
 
-  // Ngăn scroll ở trang ngoài khi modal bật
+  // Prevent background scroll when modal is open
   useEffect(() => {
     if (isOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "unset";
@@ -40,46 +41,42 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
 
   if (!isOpen) return null;
 
-  // Tính toán giá
-  const currentSizeObj = drink.sizeOptions.find((s) => s.name === selectedSize);
-  const sizeExtra = currentSizeObj?.extraPrice || 0;
+  // Price calculation
+  const currentSizeObj = drink?.sizeOptions?.find((s) => s.name === selectedSize);
+  const sizeExtra = currentSizeObj?.extraPrice ?? 0;
   const toppingTotal = selectedToppings.reduce((sum, t) => sum + t.price, 0);
-
-  const unitPrice = drink.basePrice + sizeExtra + toppingTotal;
+  const unitPrice = (drink?.basePrice ?? 0) + sizeExtra + toppingTotal;
   const totalPrice = unitPrice * quantity;
 
-  // Xử lý Topping toggle
   const handleToggleTopping = (topping: ToppingOption) => {
-    const isSelected = selectedToppings.find(t => t.id === topping.id);
+    const isSelected = selectedToppings.find((t) => t.id === topping.id);
     if (isSelected) {
-      setSelectedToppings(prev => prev.filter(t => t.id !== topping.id));
+      setSelectedToppings((prev) => prev.filter((t) => t.id !== topping.id));
     } else {
-      setSelectedToppings(prev => [...prev, topping]);
+      setSelectedToppings((prev) => [...prev, topping]);
     }
   };
 
-  // Nút Thêm vào giỏ
   const handleAddToCart = () => {
     const newItem: CartItem = {
       cartId: taoCartId(),
-      drinkId: drink.id,
-      name: drink.name,
-      image: drink.image,
-      basePrice: drink.basePrice,
+      drinkId: drink?._id ?? "",
+      name: drink?.name ?? "",
+      image: drink?.image ?? "",
+      basePrice: drink?.basePrice ?? 0,
       size: selectedSize,
       sizeExtraPrice: sizeExtra,
       toppings: selectedToppings,
-      iceLevel: iceLevel,
-      sugarLevel: sugarLevel,
+      iceLevel,
+      sugarLevel,
       note: note.trim(),
       quantity,
     };
 
     addItem(newItem);
-    addToast(`🛒 Đã thêm ${drink.name} vào giỏ hàng!`, "success");
+    addToast(`🛒 Đã thêm ${drink?.name} vào giỏ hàng!`, "success");
     onClose();
   };
-
 
   return (
     <AnimatePresence>
@@ -101,12 +98,12 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
           className="relative w-full max-w-2xl bg-white sm:rounded-3xl rounded-t-3xl h-[85vh] sm:h-auto max-h-[90vh] flex flex-col overflow-hidden"
         >
-          {/* Header Mobile: Kéo để đóng (Chỉ trang trí) */}
+          {/* Mobile drag handle */}
           <div className="w-full flex justify-center py-3 sm:hidden">
             <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
           </div>
 
-          {/* Close Btn Desktop */}
+          {/* Close button — desktop */}
           <button
             onClick={onClose}
             className="hidden sm:flex absolute top-4 right-4 z-10 w-10 h-10 items-center justify-center bg-white/80 backdrop-blur text-gray-500 rounded-full shadow-sm hover:bg-gray-100 hover:text-gray-900 transition-colors"
@@ -115,44 +112,51 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
           </button>
 
           <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide flex flex-col sm:flex-row">
-            {/* Hình ảnh (Sticky trên desktop) */}
+            {/* Product image */}
             <div className="w-full sm:w-[280px] md:w-[320px] shrink-0 bg-orange-50 flex flex-col overflow-hidden relative">
               <div className="relative aspect-square sm:aspect-auto sm:h-full w-full">
-                <Image
-                  src={drink.image}
-                  alt={drink.name}
-                  fill
-                  className="object-cover"
-                />
+                {drink?.image ? (
+                  <Image
+                    src={drink?.image ?? ""}
+                    alt={drink?.name ?? ""}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-6xl">🧋</div>
+                )}
               </div>
             </div>
 
-            {/* Form Options */}
+            {/* Options form */}
             <div className="flex-1 p-6 flex flex-col gap-8">
               <div>
-                <h2 className="text-2xl font-black text-gray-900 mb-2">{drink.name}</h2>
-                <p className="text-sm text-gray-500 leading-relaxed mb-4">{drink.description}</p>
+                <h2 className="text-2xl font-black text-gray-900 mb-2">{drink?.name}</h2>
+                <p className="text-sm text-gray-500 leading-relaxed mb-4">{drink?.description}</p>
                 <div className="inline-flex px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-lg font-black">
-                  {formatGia(drink.basePrice)}
+                  {formatGia(drink?.basePrice ?? 0)}
                 </div>
               </div>
 
-              {/* 1. Chọn Size */}
-              {drink.sizeOptions.length > 0 && (
+              {/* 1. Size */}
+              {(drink?.sizeOptions?.length ?? 0) > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-gray-900">Kích cỡ</h3>
-                    <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded">Bắt buộc</span>
+                    <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                      Bắt buộc
+                    </span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {drink.sizeOptions.map((sz) => (
+                    {drink?.sizeOptions?.map((sz) => (
                       <button
                         key={sz.name}
                         onClick={() => setSelectedSize(sz.name)}
-                        className={`flex flex-col items-center p-3 rounded-2xl border-2 transition-all ${selectedSize === sz.name
+                        className={`flex flex-col items-center p-3 rounded-2xl border-2 transition-all ${
+                          selectedSize === sz.name
                             ? "border-orange-500 bg-orange-50 text-orange-600"
                             : "border-gray-100 text-gray-600 hover:border-gray-200"
-                          }`}
+                        }`}
                       >
                         <span className="font-bold mb-1">{sz.label}</span>
                         <span className="text-xs opacity-80">
@@ -164,17 +168,18 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                 </div>
               )}
 
-              {/* 2. Lượng Đá & Đường */}
+              {/* 2. Ice & Sugar */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <h3 className="font-bold text-gray-900">Đá</h3>
                   <div className="flex bg-gray-100 rounded-xl p-1">
                     {([0, 50, 100] as const).map((val) => (
                       <button
-                        key={`da-${val}`}
+                        key={`ice-${val}`}
                         onClick={() => setIceLevel(val)}
-                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${iceLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                          }`}
+                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                          iceLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                        }`}
                       >
                         {val}%
                       </button>
@@ -187,10 +192,11 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                   <div className="flex bg-gray-100 rounded-xl p-1">
                     {([0, 50, 100] as const).map((val) => (
                       <button
-                        key={`duong-${val}`}
+                        key={`sugar-${val}`}
                         onClick={() => setSugarLevel(val)}
-                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${sugarLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
-                          }`}
+                        className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-all ${
+                          sugarLevel === val ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-900"
+                        }`}
                       >
                         {val}%
                       </button>
@@ -199,20 +205,19 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                 </div>
               </div>
 
-              {/* 3. Chọn Topping */}
-              {drink.toppingOptions.length > 0 && (
+              {/* 3. Toppings */}
+              {(drink?.toppingOptions?.length ?? 0) > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-bold text-gray-900">Topping thêm</h3>
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {drink.toppingOptions.map((top) => {
+                    {drink?.toppingOptions?.map((top) => {
                       const isSelected = selectedToppings.some((t) => t.id === top.id);
                       return (
                         <label
                           key={top.id}
-                          className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected
-                              ? "border-pink-500 bg-pink-50"
-                              : "border-gray-100 hover:bg-gray-50"
-                            }`}
+                          className={`flex items-center justify-between p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                            isSelected ? "border-pink-500 bg-pink-50" : "border-gray-100 hover:bg-gray-50"
+                          }`}
                         >
                           <div className="flex items-center gap-3">
                             <input
@@ -233,7 +238,7 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                 </div>
               )}
 
-              {/* 4. Ghi chú */}
+              {/* 4. Note */}
               <div className="space-y-3">
                 <h3 className="font-bold text-gray-900">Ghi chú thêm</h3>
                 <textarea
@@ -245,15 +250,17 @@ export function ProductModal({ drink, isOpen, onClose }: ProductModalProps) {
                 />
               </div>
 
-              {/* Padding for sticky footer */}
-              <div className="h-4"></div>
+              <div className="h-4" />
             </div>
           </div>
 
-          {/* Footer - Checkout Add */}
+          {/* Footer — Add to cart */}
           <div className="border-t border-gray-100 bg-white p-4 sm:p-6 pb-safe flex items-center justify-between gap-6 relative z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-            <QuantityControl quantity={quantity} onIncrease={() => setQuantity(q => q + 1)} onDecrease={() => setQuantity(q => q - 1)} />
-
+            <QuantityControl
+              quantity={quantity}
+              onIncrease={() => setQuantity((q) => q + 1)}
+              onDecrease={() => setQuantity((q) => q - 1)}
+            />
             <button
               onClick={handleAddToCart}
               className="flex-1 max-w-[300px] h-14 bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-2xl font-black text-lg flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-orange-300/50 hover:-translate-y-0.5 active:translate-y-0 transition-all"

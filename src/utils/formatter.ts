@@ -5,7 +5,7 @@
  * Ví dụ: 35000 → "35.000đ"
  */
 export function formatGia(amount: number): string {
-  return `${amount.toLocaleString("vi-VN")}đ`;
+  return `${amount?.toLocaleString("vi-VN")}đ`;
 }
 
 /**

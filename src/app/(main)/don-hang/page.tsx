@@ -1,35 +1,43 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
-import { Order } from "@/types/order";
 import { orderService } from "@/services/orderService";
+import { Order } from "@/types/order";
 import { OrderCard } from "@/components/order/OrderCard";
 import { SuccessAnimation } from "@/components/order/SuccessAnimation";
 
+// ── Orders content (needs Suspense for useSearchParams) ────────────────────
 function OrdersContent() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
 
+  const fetchOrders = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await orderService.getAllOrders();
+      setOrders(data);
+    } catch (err) {
+      console.log(err)
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi kết nối đến máy chủ.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const data = await orderService.getAllOrders();
-        setOrders(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchOrders();
   }, []);
 
+  // Show success animation when redirected from checkout
   useEffect(() => {
     if (newOrderId) {
       setShowSuccess(true);
@@ -38,17 +46,45 @@ function OrdersContent() {
     }
   }, [newOrderId]);
 
-  if (loading) {
+  // ── Loading ──────────────────────────────────────────────────────────────
+  if (isLoading) {
     return (
       <div className="flex justify-center p-20">
         <div className="flex flex-col items-center gap-4">
           <span className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Đang tải đơn hàng...</p>
+          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+            Đang tải đơn hàng...
+          </p>
         </div>
       </div>
     );
   }
 
+  // ── Error ────────────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div
+        className="text-center py-16 rounded-3xl border mt-8"
+        style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+      >
+        <span className="text-5xl mb-4 inline-block">⚠️</span>
+        <h2 className="text-xl font-black mb-2" style={{ color: "var(--text-primary)" }}>
+          Không thể tải đơn hàng
+        </h2>
+        <p className="mb-6 max-w-sm mx-auto text-sm" style={{ color: "var(--text-secondary)" }}>
+          {error}
+        </p>
+        <button
+          onClick={fetchOrders}
+          className="px-6 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
+
+  // ── Empty ────────────────────────────────────────────────────────────────
   if (orders.length === 0) {
     return (
       <div
@@ -72,20 +108,31 @@ function OrdersContent() {
     );
   }
 
+  // ── List ─────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Success animation overlay */}
       <SuccessAnimation show={showSuccess} orderId={newOrderId ?? undefined} />
 
       <div className="space-y-5">
         {orders.map((order) => (
-          <OrderCard key={order.id} order={order} isNew={order.id === newOrderId} />
+          <OrderCard key={order._id} order={order} isNew={order.id === newOrderId} />
         ))}
+      </div>
+
+      <div className="mt-8 flex justify-center">
+        <button
+          onClick={fetchOrders}
+          className="px-6 py-2.5 rounded-xl text-sm font-semibold border transition-colors hover:bg-orange-50 hover:border-orange-300"
+          style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+        >
+          🔄 Làm mới danh sách
+        </button>
       </div>
     </>
   );
 }
 
+// ── Page ─────────────────────────────────────────────────────────────────────
 export default function PageOrder() {
   return (
     <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>

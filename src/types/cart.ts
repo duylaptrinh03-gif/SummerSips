@@ -4,7 +4,7 @@ import { SizeName, ToppingOption } from "./drink";
 // Lưu đầy đủ thông tin tùy chọn để hiển thị chính xác trong giỏ & đơn hàng
 export interface CartItem {
   cartId: string;         // UUID riêng cho mỗi lần thêm (vì cùng sp có thể khác size/topping)
-  drinkId: number;
+  drinkId: string;       // MongoDB _id (string) do backend trả về
   name: string;
   image: string;
   basePrice: number;      // Giá gốc (size S)
