@@ -55,11 +55,10 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
             <button
               key={opt.key}
               onClick={() => { onChange(opt.key); setOpen(false); }}
-              className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${
-                opt.key === value
-                  ? "bg-orange-50 text-orange-600 font-bold"
-                  : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
-              }`}
+              className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors ${opt.key === value
+                ? "bg-orange-50 text-orange-600 font-bold"
+                : "text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                }`}
               style={opt.key === value ? {} : { color: "var(--text-primary)" }}
             >
               {opt.key === value && <span className="mr-2">✓</span>}

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LazyAuthParticles } from "@/components/three";
 import { useToastStore } from "@/store/useToastStore";
 import { authService } from "@/services/authService";
+import { useRouter } from "next/navigation";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -105,6 +106,7 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState<FormState>({ email: "", password: "" });
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const set = (field: keyof FormState) => (val: string) => setForm((f) => ({ ...f, [field]: val }));
 
@@ -124,10 +126,15 @@ export function LoginForm() {
 
     try {
       const response = await authService.login(payload);
-
-      addToast("🎉 Đặt hàng thành công!", "success");
+      if (response.statusCode === 200) {
+        addToast("Đăng nhập thành công!", "success");
+        router.push("/");
+      } else {
+        addToast("Đăng nhập thất bại!", "error");
+      }
 
     } catch (err) {
+      addToast("Đăng nhập thất bại!", "error");
 
     } finally {
     }
@@ -234,6 +241,8 @@ export function RegisterForm() {
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
 
+  const router = useRouter();
+
   const set = (field: keyof typeof form) => (val: string) => setForm((f) => ({ ...f, [field]: val }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -258,10 +267,16 @@ export function RegisterForm() {
     }
     try {
       const response = await authService.register(form);
-
-      addToast("🎉 Đặt hàng thành công!", "success");
+      if (response.statusCode == 201) {
+        addToast("Đăng ký thành công!", "success");
+        router.push("/dang-nhap");
+      } else {
+        addToast("Đăng ký không thành công!", "error");
+      }
 
     } catch (err) {
+      console.log(err);
+      addToast("Đăng ký không thành công!", "error");
 
     } finally {
     }
