@@ -1,4 +1,6 @@
 "use client";
+// NOTE: Metadata cho trang này được quản lý bởi (main)/layout.tsx
+// vì đây là Client Component, không thể export metadata trực tiếp.
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -51,8 +53,6 @@ export default function PageDrink() {
   useEffect(() => {
     fetchDrinks();
   }, []);
-
-  console.log(error)
 
   // ── Error state ──────────────────────────────────────────────────────────
   if (error) {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 
 const navItems = [
   { label: "Trang Chủ", href: "/", emoji: "🏠" },
@@ -114,7 +115,10 @@ export default function Navbar() {
           </nav>
 
           {/* Right controls */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {/* Command Palette (Global Search) */}
+            <CommandPalette />
+
             {/* Theme Toggle */}
             <ThemeToggle />
 

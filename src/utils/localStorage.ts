@@ -1,3 +1,12 @@
+/**
+ * @deprecated DEAD CODE — Không có component nào import file này.
+ *
+ * Lịch sử: File này được tạo ra khi dự án chưa có Zustand persist và backend API.
+ * - Cart: quản lý bởi `useCartStore` (Zustand + localStorage via persist middleware)
+ * - Orders: fetch từ backend API qua `orderService.getAllOrders()`
+ *
+ * File này sẽ được xóa ở lần cleanup tiếp theo.
+ */
 import { CartItem } from "@/types/cart";
 import { Order } from "@/types/order";
 

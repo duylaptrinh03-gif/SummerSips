@@ -13,13 +13,14 @@ interface ConfettiPiece {
 
 const COLORS = [
   "#f97316", "#ec4899", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b",
-];
+] as const;
 
 function generateConfetti(count = 50): ConfettiPiece[] {
   return Array.from({ length: count }, (_, i) => ({
     id: i,
     left: `${Math.random() * 100}%`,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    // noUncheckedIndexedAccess: provide fallback for array access
+    color: COLORS[Math.floor(Math.random() * COLORS.length)] ?? "#f97316",
     delay: `${Math.random() * 1.5}s`,
     duration: `${1.5 + Math.random() * 1.5}s`,
     size: `${6 + Math.random() * 8}px`,

@@ -8,11 +8,14 @@ interface SortDropdownProps {
   onChange: (key: SortKey) => void;
 }
 
+const DEFAULT_SORT: SortOption = { key: "default", label: "Mặc định" };
+
 export function SortDropdown({ value, onChange }: SortDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const current = SORT_OPTIONS.find((o) => o.key === value) ?? SORT_OPTIONS[0];
+  // noUncheckedIndexedAccess: SORT_OPTIONS[0] có thể undefined → dùng explicit fallback
+  const current = SORT_OPTIONS.find((o) => o.key === value) ?? DEFAULT_SORT;
 
   // Close on outside click
   useEffect(() => {

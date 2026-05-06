@@ -1,13 +1,8 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
+import type { ApiResponse, ApiError } from "@/types/api";
 
-// ── Định nghĩa Type ────────────────────────────────────────────────────────
-// Giả định cấu trúc API của bạn trả về từ NestJS
-export interface ApiResponse<T = unknown> {
-  statusCode: number;
-  message?: string | string[];
-  data: T;
-  totalResult?: number;
-}
+// Re-export ApiResponse for backward-compat with any file that imports from here
+export type { ApiResponse };
 
 // Custom Error Class để giữ lại status code và data gốc
 export class HttpError extends Error {
@@ -35,7 +30,7 @@ const axiosInstance = axios.create({
 // ── Request Interceptor ───────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = null; 
+    const token = null;
 
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -48,15 +43,17 @@ axiosInstance.interceptors.request.use(
 );
 
 // ── Response Interceptor ──────────────────────────────────────────────────
+// Success: unwrap ApiResponse<T> — services cast lại với generic cụ thể
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
+  (response: AxiosResponse<ApiResponse<unknown>>) => {
     if (response.data && response.data.statusCode) {
-      return response.data as unknown as AxiosResponse<ApiResponse>;
+      return response.data as unknown as AxiosResponse<ApiResponse<unknown>>;
     }
 
-    return response.data as unknown as AxiosResponse<ApiResponse>;
+    return response.data as unknown as AxiosResponse<ApiResponse<unknown>>;
   },
-  async (error: AxiosError<ApiResponse>) => {
+  // Error: backend gửi ApiError shape (có message field)
+  async (error: AxiosError<ApiError>) => {
     const status = error.response?.status;
     const serverData = error.response?.data;
     const serverMessage = serverData?.message;
@@ -67,8 +64,6 @@ axiosInstance.interceptors.response.use(
 
     if (status === 401) {
       console.warn("[API 401] Unauthorized:", normalizedMessage);
-      
-    
     } else if (status === 403) {
       console.warn("[API 403] Forbidden:", normalizedMessage);
     } else if (status === 404) {
@@ -80,7 +75,7 @@ axiosInstance.interceptors.response.use(
     }
 
     const enhancedError = new HttpError(normalizedMessage, status, serverData);
-    
+
     return Promise.reject(enhancedError);
   }
 );
