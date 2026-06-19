@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LazyStatCard } from "@/components/three";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Dashboard | SummerSips",
@@ -13,7 +15,15 @@ const RECENT_ORDERS = [
   { id: "ORD-1713161239999", date: "10/04/2026", items: 1, total: 45000, status: "completed" },
 ];
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth();
+  
+  if (!session) {
+    redirect("/dang-nhap");
+  }
+
+  const user = session.user;
+
   return (
     <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -21,7 +31,7 @@ export default function DashboardPage() {
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black mb-2" style={{ color: "var(--text-primary)" }}>
-              Chào mừng, Nguyễn Văn A 👋
+              Chào mừng, {user.name || "Bạn"} 👋
             </h1>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
               Đây là tổng quan tài khoản của bạn hôm nay.

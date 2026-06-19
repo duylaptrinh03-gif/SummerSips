@@ -6,6 +6,10 @@ import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/useCartStore";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { CommandPalette } from "@/components/ui/CommandPalette";
+import { NotificationBell } from "@/components/ui/NotificationBell";
+import { useSession, signOut } from "next-auth/react";
+import { LazyParticleBurst } from "@/components/three";
+import { useNotificationStore } from "@/store/useNotificationStore";
 
 const navItems = [
   { label: "Trang Chủ", href: "/", emoji: "🏠" },
@@ -20,6 +24,18 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { data: session, status } = useSession();
+  const notifications = useNotificationStore((s) => s.notifications);
+  const [showBurst, setShowBurst] = useState(false);
+
+  // Trigger burst when new notification arrives
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setShowBurst(true);
+      const timer = setTimeout(() => setShowBurst(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [notifications.length]);
 
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 0);
@@ -119,8 +135,40 @@ export default function Navbar() {
             {/* Command Palette (Global Search) */}
             <CommandPalette />
 
+            {/* Notification Bell */}
+            <NotificationBell />
+
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* User Profile / Auth */}
+            {status === "authenticated" ? (
+              <div className="flex items-center gap-3 ml-2">
+                <Link
+                  href="/cai-dat"
+                  className="w-9 h-9 rounded-full border-2 border-orange-100 dark:border-gray-800 overflow-hidden hover:scale-110 transition-transform"
+                >
+                  <img
+                    src={session.user.image || `https://i.pravatar.cc/150?u=${session.user.email}`}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="hidden sm:block text-xs font-black text-gray-500 hover:text-red-500 uppercase tracking-wider transition-colors"
+                >
+                  Thoát
+                </button>
+              </div>
+            ) : status === "unauthenticated" ? (
+              <Link
+                href="/dang-nhap"
+                className="ml-2 px-5 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:-translate-y-0.5 transition-all"
+              >
+                Đăng nhập
+              </Link>
+            ) : null}
 
             {/* Mobile Cart */}
             <Link
@@ -240,6 +288,8 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      {/* Particle Burst Overlay */}
+      {showBurst && <LazyParticleBurst />}
     </>
   );
 }

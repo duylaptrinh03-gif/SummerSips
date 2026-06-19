@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { LazyGlitchScene } from "@/components/three";
 
 export const metadata: Metadata = {
   title: "404 — Trang Không Tồn Tại | SummerSips",
@@ -9,11 +10,15 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-6 text-center"
+      className="min-h-screen flex flex-col items-center justify-center px-6 text-center relative overflow-hidden"
       style={{ background: "var(--bg-secondary)" }}
     >
-      {/* Big number */}
-      <div className="relative mb-6">
+      {/* 3D Glitch Background */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+        <LazyGlitchScene text="404" />
+      </div>
+
+      <div className="relative z-10">
         <span
           className="text-[10rem] font-black leading-none select-none"
           style={{

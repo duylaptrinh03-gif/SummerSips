@@ -28,6 +28,8 @@ export const metadata: Metadata = {
 // trước khi trình duyệt paint lần đầu (chạy đồng bộ, không block render).
 const themeInitScript = `(function(){try{var s=localStorage.getItem('summersips-theme');var t=s?JSON.parse(s).state?.theme:'light';document.documentElement.setAttribute('data-theme',t||'light')}catch(e){}})()`;
 
+import { SessionProvider } from "@/components/providers/SessionProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,12 +46,14 @@ export default function RootLayout({
         style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
       >
         <ReactQueryProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              {children}
-              <BackToTop />
-            </ToastProvider>
-          </ThemeProvider>
+          <SessionProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                {children}
+                <BackToTop />
+              </ToastProvider>
+            </ThemeProvider>
+          </SessionProvider>
         </ReactQueryProvider>
       </body>
     </html>

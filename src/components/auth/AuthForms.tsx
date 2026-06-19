@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { LazyAuthParticles } from "@/components/three";
 import { useToastStore } from "@/store/useToastStore";
 import { authService } from "@/services/authService";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -125,25 +126,32 @@ export function LoginForm() {
     const payload = form
 
     try {
-      const response = await authService.login(payload);
-      if (response.statusCode === 200) {
-        addToast("Đăng nhập thành công!", "success");
-        router.push("/");
-      } else {
+      const result = await signIn("credentials", {
+        email: form.email,
+        password: form.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("Email hoặc mật khẩu không chính xác.");
         addToast("Đăng nhập thất bại!", "error");
+      } else {
+        addToast("Đăng nhập thành công!", "success");
+        router.refresh();
+        router.push("/onboarding");
       }
-
     } catch (err) {
-      addToast("Đăng nhập thất bại!", "error");
-
-    } finally {
+      addToast("Đã có lỗi xảy ra. Vui lòng thử lại!", "error");
     }
 
   };
 
-  const handleSocial = (provider: "google" | "github") => {
-    // TODO: NextAuth signIn(provider)
-    addToast(`🚀 OAuth ${provider} — chưa tích hợp`, "info");
+  const handleSocial = async (provider: "google" | "github") => {
+    try {
+      await signIn(provider, { redirectTo: "/dashboard" });
+    } catch (err) {
+      addToast(`Lỗi đăng nhập ${provider}`, "error");
+    }
   };
 
   return (
@@ -237,7 +245,7 @@ export function LoginForm() {
 // ── Register Form ─────────────────────────────────────────────────────────────
 export function RegisterForm() {
   const addToast = useToastStore((s) => s.addToast);
-  const [isPending, startTransition] = useTransition();
+  const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
 
@@ -265,25 +273,28 @@ export function RegisterForm() {
       setError("Mật khẩu xác nhận không khớp.");
       return;
     }
+
+    setIsLoading(true);
     try {
-      const response = await authService.register(form);
-      if (response.statusCode == 201) {
-        addToast("Đăng ký thành công!", "success");
-        router.push("/dang-nhap");
-      } else {
-        addToast("Đăng ký không thành công!", "error");
-      }
-
+      // Chỉ gửi name/email/password — backend từ chối field lạ (forbidNonWhitelisted)
+      await authService.register({ name: form.name, email: form.email, password: form.password });
+      addToast("Đăng ký thành công! Vui lòng đăng nhập.", "success");
+      router.push("/dang-nhap");
     } catch (err) {
-      console.log(err);
-      addToast("Đăng ký không thành công!", "error");
-
+      const message = err instanceof Error ? err.message : "Đăng ký không thành công!";
+      setError(message);
+      addToast(message, "error");
     } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSocial = (provider: "google" | "github") => {
-    addToast(`🚀 OAuth ${provider} — chưa tích hợp`, "info");
+  const handleSocial = async (provider: "google" | "github") => {
+    try {
+      await signIn(provider, { redirectTo: "/dashboard" });
+    } catch (err) {
+      addToast(`Lỗi đăng nhập ${provider}`, "error");
+    }
   };
 
   return (
@@ -296,8 +307,8 @@ export function RegisterForm() {
     >
       {/* Social */}
       <div className="grid grid-cols-2 gap-3">
-        <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleSocial("google")} disabled={isPending} />
-        <SocialButton icon={<GitHubIcon />} label="GitHub" onClick={() => handleSocial("github")} disabled={isPending} />
+        <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleSocial("google")} disabled={isLoading} />
+        <SocialButton icon={<GitHubIcon />} label="GitHub" onClick={() => handleSocial("github")} disabled={isLoading} />
       </div>
 
       <div className="flex items-center gap-3">
@@ -307,10 +318,10 @@ export function RegisterForm() {
       </div>
 
       {/* Fields */}
-      <AuthInput id="reg-name" label="Tên của bạn" type="text" value={form.name} onChange={set("name")} placeholder="Nguyễn Văn A" disabled={isPending} />
-      <AuthInput id="reg-email" label="Email" type="email" value={form.email} onChange={set("email")} placeholder="ban@email.com" disabled={isPending} />
-      <AuthInput id="reg-password" label="Mật khẩu" type="password" value={form.password} onChange={set("password")} placeholder="Ít nhất 8 ký tự" disabled={isPending} />
-      <AuthInput id="reg-confirm" label="Xác nhận mật khẩu" type="password" value={form.confirm} onChange={set("confirm")} placeholder="Nhập lại mật khẩu" disabled={isPending} />
+      <AuthInput id="reg-name" label="Tên của bạn" type="text" value={form.name} onChange={set("name")} placeholder="Nguyễn Văn A" disabled={isLoading} />
+      <AuthInput id="reg-email" label="Email" type="email" value={form.email} onChange={set("email")} placeholder="ban@email.com" disabled={isLoading} />
+      <AuthInput id="reg-password" label="Mật khẩu" type="password" value={form.password} onChange={set("password")} placeholder="Ít nhất 8 ký tự" disabled={isLoading} />
+      <AuthInput id="reg-confirm" label="Xác nhận mật khẩu" type="password" value={form.confirm} onChange={set("confirm")} placeholder="Nhập lại mật khẩu" disabled={isLoading} />
 
       {/* Password strength */}
       {form.password && (
@@ -355,14 +366,14 @@ export function RegisterForm() {
       <button
         type="submit"
         id="btn-register"
-        disabled={isPending}
+        disabled={isLoading}
         className="w-full py-3.5 rounded-2xl font-black text-white transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 shadow-lg"
         style={{
           background: "linear-gradient(135deg, #f97316, #ec4899)",
           boxShadow: "0 8px 24px rgba(249,115,22,0.35)",
         }}
       >
-        {isPending ? (
+        {isLoading ? (
           <span className="flex items-center justify-center gap-2">
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             Đang tạo tài khoản...

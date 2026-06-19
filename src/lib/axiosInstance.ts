@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import type { ApiResponse, ApiError } from "@/types/api";
+import { getSession } from "next-auth/react";
 
 // Re-export ApiResponse for backward-compat with any file that imports from here
 export type { ApiResponse };
@@ -29,11 +30,12 @@ const axiosInstance = axios.create({
 
 // ── Request Interceptor ───────────────────────────────────────────────────
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = null;
-
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config: InternalAxiosRequestConfig) => {
+    if (typeof window !== "undefined") {
+      const session = await getSession();
+      if (session?.accessToken) {
+        config.headers.Authorization = `Bearer ${session.accessToken}`;
+      }
     }
     return config;
   },

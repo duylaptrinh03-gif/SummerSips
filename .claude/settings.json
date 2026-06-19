@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/c/Users/duypd/Duan/TNE/**)",
+      "Bash(grep -E \"\\(package\\\\.json|tsconfig|\\\\.ts$\\)\")",
+      "Read(//c/Users/duypd/**)",
+      "Bash(ls -la ./src/common/enums/)"
+    ]
+  }
+}

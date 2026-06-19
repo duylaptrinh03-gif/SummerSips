@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToastStore } from "@/store/useToastStore";
+import { useSession } from "next-auth/react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface UserProfile {
@@ -184,11 +185,12 @@ function DangerZone() {
 
 // ── Main settings page content ────────────────────────────────────────────────
 export function ProfileSettingsContent() {
+  const { data: session, update } = useSession();
   const addToast = useToastStore((s) => s.addToast);
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Nguyễn Văn A",
-    email: "user@summersips.vn",
+    name: "",
+    email: "",
     phone: "0901 234 567",
     defaultAddress: "123 Nguyễn Du, Quận 1, TP.HCM",
     avatar: "🧑",
@@ -199,6 +201,17 @@ export function ProfileSettingsContent() {
     },
     theme: "light",
   });
+
+  // Đồng bộ hóa dữ liệu từ session khi có sự thay đổi
+  useEffect(() => {
+    if (session?.user) {
+      setProfile((p) => ({
+        ...p,
+        name: session.user.name || "",
+        email: session.user.email || "",
+      }));
+    }
+  }, [session]);
 
   const set = <K extends keyof UserProfile>(key: K) => (val: UserProfile[K]) =>
     setProfile((p) => ({ ...p, [key]: val }));
