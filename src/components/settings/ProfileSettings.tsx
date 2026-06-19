@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToastStore } from "@/store/useToastStore";
 import { useSession } from "next-auth/react";
+import { userService } from "@/services/userService";
+import { HttpError } from "@/lib/axiosInstance";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface UserProfile {
@@ -202,16 +204,31 @@ export function ProfileSettingsContent() {
     theme: "light",
   });
 
-  // Đồng bộ hóa dữ liệu từ session khi có sự thay đổi
+  // Tải profile từ API khi component mount
   useEffect(() => {
-    if (session?.user) {
-      setProfile((p) => ({
-        ...p,
-        name: session.user.name || "",
-        email: session.user.email || "",
-      }));
-    }
-  }, [session]);
+    if (!session?.user) return;
+    userService.getMe()
+      .then((res) => {
+        if (res?.data) {
+          setProfile((p) => ({
+            ...p,
+            name: res.data.name || session.user.name || "",
+            email: res.data.email || session.user.email || "",
+            phone: res.data.phone || p.phone,
+            defaultAddress: res.data.defaultAddress || p.defaultAddress,
+          }));
+        }
+      })
+      .catch(() => {
+        // Fallback từ session nếu API lỗi
+        setProfile((p) => ({
+          ...p,
+          name: session.user.name || "",
+          email: session.user.email || "",
+        }));
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   const set = <K extends keyof UserProfile>(key: K) => (val: UserProfile[K]) =>
     setProfile((p) => ({ ...p, [key]: val }));
@@ -221,10 +238,21 @@ export function ProfileSettingsContent() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // TODO: Gọi API lưu thông tin
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSaving(false);
-    addToast("✅ Đã lưu thông tin thành công!", "success");
+    try {
+      await userService.updateMe({
+        name: profile.name,
+        phone: profile.phone,
+        defaultAddress: profile.defaultAddress,
+      });
+      // Cập nhật tên trong NextAuth session
+      await update({ name: profile.name });
+      addToast("Đã lưu thông tin thành công!", "success");
+    } catch (err) {
+      const message = err instanceof HttpError ? err.message : "Không thể lưu thông tin. Vui lòng thử lại!";
+      addToast(message, "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

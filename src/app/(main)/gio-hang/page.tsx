@@ -7,6 +7,7 @@ import { useCartStore, DELIVERY_FEE, FREE_SHIP_THRESHOLD } from "@/store/useCart
 import { CartItemCard } from "@/components/cart/CartItemCard";
 import { formatGia } from "@/utils/formatter";
 import { orderService } from "@/services/orderService";
+import { couponService } from "@/services/couponService";
 import { useToastStore } from "@/store/useToastStore";
 import { CreateOrderPayload } from "@/types/order";
 
@@ -19,10 +20,11 @@ export default function PageCart() {
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
   const couponCode = useCartStore((state) => state.couponCode);
-  const discountPercent = useCartStore((state) => state.discountPercent);
+  const discountAmount = useCartStore((state) => state.discountAmount);
   const isFreeShip = useCartStore((state) => state.isFreeShip);
-  const applyCoupon = useCartStore((state) => state.applyCoupon);
+  const setServerCoupon = useCartStore((state) => state.setServerCoupon);
   const removeCoupon = useCartStore((state) => state.removeCoupon);
+  const [isCouponLoading, setIsCouponLoading] = useState(false);
 
   const getCount = useCartStore((state) => state.getTotalCount);
   const getTotalPrice = useCartStore((state) => state.getTotalPrice);
@@ -50,14 +52,25 @@ export default function PageCart() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleApplyCoupon = () => {
-    if (!couponInput.trim()) return;
-    const result = applyCoupon(couponInput);
-    if (result.success) {
-      addToast(result.message, "success");
-      setCouponInput("");
-    } else {
-      addToast(result.message, "error");
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim() || isCouponLoading) return;
+    setIsCouponLoading(true);
+    try {
+      const res = await couponService.validate(couponInput, rawTotal);
+      if (res?.data?.valid) {
+        setServerCoupon(
+          couponInput,
+          res.data.discountAmount,
+          res.data.type === "freeship"
+        );
+        addToast(res.data.message, "success");
+        setCouponInput("");
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Mã không hợp lệ hoặc đã hết hạn!";
+      addToast(msg, "error");
+    } finally {
+      setIsCouponLoading(false);
     }
   };
 
@@ -192,11 +205,11 @@ export default function PageCart() {
                   </span>
                 </div>
 
-                {discountPercent > 0 && (
+                {discountAmount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">Giảm giá ({discountPercent}%)</span>
+                    <span className="text-emerald-600">Giảm giá ({couponCode})</span>
                     <span className="font-semibold text-emerald-600">
-                      -{formatGia(rawTotal - subtotal)}
+                      -{formatGia(discountAmount)}
                     </span>
                   </div>
                 )}
@@ -247,7 +260,7 @@ export default function PageCart() {
                       <div>
                         <p className="text-sm font-bold text-emerald-700">Mã {couponCode} đã áp dụng</p>
                         <p className="text-xs text-emerald-600">
-                          {discountPercent > 0 ? `Giảm ${discountPercent}%` : "Miễn phí vận chuyển"}
+                          {isFreeShip ? "Miễn phí vận chuyển" : `Giảm ${formatGia(discountAmount)}`}
                         </p>
                       </div>
                     </div>
@@ -266,7 +279,8 @@ export default function PageCart() {
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
                       placeholder="Nhập mã khuyến mãi..."
-                      className="flex-1 px-4 py-2.5 text-sm rounded-xl border outline-none transition-all focus:ring-2 focus:ring-orange-200 focus:border-orange-400"
+                      disabled={isCouponLoading}
+                      className="flex-1 px-4 py-2.5 text-sm rounded-xl border outline-none transition-all focus:ring-2 focus:ring-orange-200 focus:border-orange-400 disabled:opacity-60"
                       style={{
                         background: "var(--bg-secondary)",
                         borderColor: "var(--border-color)",
@@ -275,15 +289,15 @@ export default function PageCart() {
                     />
                     <button
                       onClick={handleApplyCoupon}
-                      className="px-4 py-2.5 rounded-xl text-sm font-bold bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors whitespace-nowrap"
+                      disabled={isCouponLoading}
+                      className="px-4 py-2.5 rounded-xl text-sm font-bold bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors whitespace-nowrap disabled:opacity-60"
                     >
-                      Áp dụng
+                      {isCouponLoading ? (
+                        <span className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin inline-block" />
+                      ) : "Áp dụng"}
                     </button>
                   </div>
                 )}
-                <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>
-                  Thử: SUMMER20, SIPS10, FREESHIP, HELLO15
-                </p>
               </div>
 
               {/* Delivery form */}

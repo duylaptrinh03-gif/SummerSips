@@ -32,14 +32,20 @@ export default auth((req: NextRequest & { auth?: any }) => {
   }
 
   // 2. Route Protection
-  const isProtectedRoute = 
-    nextUrl.pathname.startsWith("/dashboard") || 
-    nextUrl.pathname.startsWith("/cai-dat") || 
+  const isProtectedRoute =
+    nextUrl.pathname.startsWith("/dashboard") ||
+    nextUrl.pathname.startsWith("/cai-dat") ||
     nextUrl.pathname.startsWith("/don-hang") ||
-    nextUrl.pathname.startsWith("/onboarding");
+    nextUrl.pathname.startsWith("/onboarding") ||
+    nextUrl.pathname.startsWith("/admin");
 
   if (isProtectedRoute && !isLoggedIn) {
     return NextResponse.redirect(new URL("/dang-nhap", nextUrl));
+  }
+
+  // 2b. Admin route — chỉ role admin mới vào được
+  if (nextUrl.pathname.startsWith("/admin") && req.auth?.user?.role !== "admin") {
+    return NextResponse.redirect(new URL("/", nextUrl));
   }
   
 

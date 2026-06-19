@@ -4,7 +4,20 @@
       "Read(//c/c/Users/duypd/Duan/TNE/**)",
       "Bash(grep -E \"\\(package\\\\.json|tsconfig|\\\\.ts$\\)\")",
       "Read(//c/Users/duypd/**)",
-      "Bash(ls -la ./src/common/enums/)"
+      "Bash(ls -la ./src/common/enums/)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\auth",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\user\\dto",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\user\\schemas",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\user",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\categories\\dto",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\categories",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\coupons\\dto",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\coupons",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\orders",
+      "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src"
     ]
   }
 }
