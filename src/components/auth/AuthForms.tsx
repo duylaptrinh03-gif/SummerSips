@@ -276,7 +276,7 @@ export function RegisterForm() {
     setIsLoading(true);
     try {
       // Chỉ gửi name/email/password — backend từ chối field lạ (forbidNonWhitelisted)
-      await authService.register({ fullName: form.name, email: form.email, password: form.password });
+      await authService.register({ name: form.name, email: form.email, password: form.password });
       addToast("Đăng ký thành công! Vui lòng đăng nhập.", "success");
       router.push("/dang-nhap");
     } catch (err) {
