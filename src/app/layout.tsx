@@ -32,6 +32,8 @@ import { SessionProvider } from "@/components/providers/SessionProvider";
 import { SessionSync } from "@/components/providers/SessionSync";
 import { SocketProvider } from "@/components/providers/SocketProvider";
 import { GlobalOrderNotifications } from "@/components/providers/GlobalOrderNotifications";
+import { ChatBot } from "@/components/ChatBot";
+import { ChatHistorySync } from "@/components/providers/ChatHistorySync";
 
 export default function RootLayout({
   children,
@@ -52,12 +54,14 @@ export default function RootLayout({
         <ReactQueryProvider>
           <SessionProvider>
             <SessionSync />
+            <ChatHistorySync />
             <SocketProvider>
               <GlobalOrderNotifications />
               <ThemeProvider>
                 <ToastProvider>
                   {children}
                   <BackToTop />
+                  <ChatBot />
                 </ToastProvider>
               </ThemeProvider>
             </SocketProvider>

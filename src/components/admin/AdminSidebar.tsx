@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/admin/products",   label: "Sản phẩm",    icon: "🧋" },
   { href: "/admin/categories", label: "Danh mục",    icon: "📂" },
   { href: "/admin/coupons",    label: "Coupon",      icon: "🎟️" },
+  { href: "/admin/chat",       label: "Chat AI",     icon: "💬" },
 ];
 
 export function AdminSidebar() {
