@@ -22,6 +22,7 @@ export function ChatWindow() {
     setConversationId,
     setLoading,
     clearChat,
+    toggleChat,
   } = useChatStore();
 
   const handleSend = useCallback(
@@ -101,7 +102,10 @@ export function ChatWindow() {
               </p>
               <p className="text-[11px] text-white/80">Trả lời trong vài giây</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Online dot */}
+              <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+
               {/* Clear chat */}
               {messages.length > 0 && (
                 <button
@@ -113,8 +117,16 @@ export function ChatWindow() {
                   🗑
                 </button>
               )}
-              {/* Online dot */}
-              <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+
+              {/* Close button */}
+              <button
+                onClick={toggleChat}
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 flex items-center justify-center text-white font-bold text-base transition-colors"
+                title="Đóng chat"
+                aria-label="Đóng chat"
+              >
+                ✕
+              </button>
             </div>
           </div>
 
