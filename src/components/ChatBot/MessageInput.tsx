@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent, ChangeEvent } from "react";
+import { useState, useRef, KeyboardEvent } from "react";
 
 interface Props {
   onSend: (message: string) => void;
@@ -9,62 +9,45 @@ interface Props {
 
 export function MessageInput({ onSend, disabled }: Props) {
   const [value, setValue] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
     const trimmed = value.trim();
     if (!trimmed || disabled) return;
     onSend(trimmed);
     setValue("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    inputRef.current?.focus();
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
   };
 
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setValue(e.target.value);
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-    }
-  };
-
   return (
     <div
-      className="px-3 py-3 border-t flex items-end gap-2"
+      className="px-3 py-3 border-t flex items-center gap-2"
       style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}
     >
-      <textarea
-        id="chat-input"
-        ref={textareaRef}
+      <input
+        ref={inputRef}
+        type="text"
         value={value}
-        onChange={handleChange}
+        onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
-        rows={1}
         placeholder="Nhập tin nhắn... (Enter để gửi)"
-        className="flex-1 resize-none rounded-xl px-3 py-2.5 text-sm outline-none transition-colors leading-relaxed"
+        className="flex-1 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
         style={{
           background: "var(--bg-secondary)",
           border: "1px solid var(--border-color)",
           color: "var(--text-primary)",
-          maxHeight: "120px",
-          minHeight: "40px",
+          height: "40px",
         }}
-        onFocus={(e) =>
-          (e.currentTarget.style.borderColor = "rgb(249,115,22)")
-        }
-        onBlur={(e) =>
-          (e.currentTarget.style.borderColor = "var(--border-color)")
-        }
+        onFocus={(e) => (e.currentTarget.style.borderColor = "rgb(249,115,22)")}
+        onBlur={(e) => (e.currentTarget.style.borderColor = "var(--border-color)")}
       />
       <button
         onClick={handleSend}
