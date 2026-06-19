@@ -47,12 +47,16 @@ const config: NextAuthConfig = {
         password: { label: "Mật khẩu", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          console.error("[auth] Missing credentials");
+          return null;
+        }
+
+        const apiUrl = `${process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL}/auth/login`;
+        console.log("[auth] Calling:", apiUrl);
 
         try {
-          const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-            {
+          const res = await fetch(apiUrl, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -63,13 +67,14 @@ const config: NextAuthConfig = {
             }
           );
 
+          console.log("[auth] HTTP status:", res.status);
+
           if (!res.ok) {
             const errBody = await res.text().catch(() => "");
             console.error("[auth] login failed:", res.status, errBody);
             return null;
           }
 
-          // Backend wrap qua TransformInterceptor: { statusCode, data: { accessToken, user }, totalResult }
           const json = (await res.json()) as {
             statusCode: number;
             data: {
@@ -83,8 +88,16 @@ const config: NextAuthConfig = {
             };
           };
 
-          console.log("[auth] login response:", JSON.stringify(json));
-          if (!json.data?.accessToken || !json.data?.user) return null;
+          console.log("[auth] login response:", JSON.stringify(json, null, 2));
+
+          if (!json.data?.accessToken) {
+            console.error("[auth] Missing accessToken in response");
+            return null;
+          }
+          if (!json.data?.user) {
+            console.error("[auth] Missing user in response");
+            return null;
+          }
 
           const userData = json.data.user;
           const userId = userData.id ?? "";
@@ -92,6 +105,8 @@ const config: NextAuthConfig = {
           const userName = userData.name ?? userEmail;
           const userRole = userData.role ?? "user";
           const accessToken = json.data.accessToken;
+
+          console.log("[auth] authorize success, userId:", userId);
 
           return {
             id: userId,
