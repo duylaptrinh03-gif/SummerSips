@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { couponService, Coupon, CouponType } from "@/services/couponService";
 import { useToastStore } from "@/store/useToastStore";
 import { formatGia } from "@/utils/formatter";
@@ -202,10 +201,7 @@ export default function AdminCouponsPage() {
         {/* Header */}
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <Link href="/admin" className="text-sm font-semibold text-orange-500 hover:text-orange-600">
-              ← Dashboard
-            </Link>
-            <h1 className="text-3xl font-black mt-2" style={{ color: "var(--text-primary)" }}>
+            <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>
               Quản Lý Coupon
             </h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>

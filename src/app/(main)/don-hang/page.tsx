@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { orderService } from "@/services/orderService";
 import { Order } from "@/types/order";
 import { OrderCard } from "@/components/order/OrderCard";
 import { SuccessAnimation } from "@/components/order/SuccessAnimation";
+import { useOrderSocket, OrderStatusUpdatedEvent } from "@/hooks/useOrderSocket";
 
 // ── Orders content (needs Suspense for useSearchParams) ────────────────────
 function OrdersContent() {
@@ -16,7 +17,6 @@ function OrdersContent() {
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
 
@@ -50,6 +50,19 @@ function OrdersContent() {
       return () => clearTimeout(timer);
     }
   }, [newOrderId]);
+
+  // Cập nhật status order trong state khi nhận WebSocket event
+  const handleOrderStatusUpdated = useCallback((event: OrderStatusUpdatedEvent) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.id === event.orderId
+          ? { ...order, status: event.newStatus }
+          : order,
+      ),
+    );
+  }, []);
+
+  useOrderSocket(handleOrderStatusUpdated);
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {

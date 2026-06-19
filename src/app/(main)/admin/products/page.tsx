@@ -5,7 +5,6 @@ import { drinkService } from "@/services/drinkService";
 import { Drink, CreateDrinkPayload, SizeOption, ToppingOption } from "@/types/drink";
 import { useToastStore } from "@/store/useToastStore";
 import { formatGia } from "@/utils/formatter";
-import Link from "next/link";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -381,11 +380,6 @@ export default function AdminProductsPage() {
         {/* Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3 mb-1">
-              <Link href="/admin" className="text-sm font-semibold text-orange-500 hover:text-orange-600">
-                ← Dashboard
-              </Link>
-            </div>
             <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>
               Quản Lý Sản Phẩm
             </h1>

@@ -10,7 +10,8 @@
       "Bash(node -e \"const p = require.resolve\\('next-auth/jwt'\\); console.log\\(p\\)\")",
       "Bash(node -e \"const pkg = require\\('./node_modules/next-auth/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
       "Bash(node -e \"const pkg = require\\('./node_modules/@auth/core/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
-      "Bash(xargs grep -l \"CouponType\\\\|enum\")"
+      "Bash(xargs grep -l \"CouponType\\\\|enum\")",
+      "Bash(npx tsc *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\auth",

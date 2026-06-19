@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { categoryService, Category } from "@/services/categoryService";
 import { useToastStore } from "@/store/useToastStore";
 
@@ -81,10 +80,7 @@ export default function AdminCategoriesPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/admin" className="text-sm font-semibold text-orange-500 hover:text-orange-600">
-            ← Dashboard
-          </Link>
-          <h1 className="text-3xl font-black mt-2" style={{ color: "var(--text-primary)" }}>
+          <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>
             Quản Lý Danh Mục
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>

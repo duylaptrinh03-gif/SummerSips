@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { adminService, AdminStats } from "@/services/adminService";
 import { ORDER_STATUS_LABEL, OrderStatus } from "@/types/order";
 import { formatGia } from "@/utils/formatter";
@@ -107,24 +106,13 @@ export default function AdminPage() {
               Tổng quan hoạt động cửa hàng
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/admin/products" className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors">
-              🧋 Sản phẩm
-            </Link>
-            <Link href="/admin/categories" className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300" style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}>
-              📂 Danh mục
-            </Link>
-            <Link href="/admin/coupons" className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300" style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}>
-              🎟️ Coupon
-            </Link>
-            <button
-              onClick={fetchStats}
-              className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300"
-              style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
-            >
-              🔄 Làm mới
-            </button>
-          </div>
+          <button
+            onClick={fetchStats}
+            className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300 flex items-center gap-1.5"
+            style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+          >
+            🔄 Làm mới
+          </button>
         </div>
 
         {/* Stats grid */}

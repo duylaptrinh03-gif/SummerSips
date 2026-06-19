@@ -30,6 +30,8 @@ const themeInitScript = `(function(){try{var s=localStorage.getItem('summersips-
 
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { SessionSync } from "@/components/providers/SessionSync";
+import { SocketProvider } from "@/components/providers/SocketProvider";
+import { GlobalOrderNotifications } from "@/components/providers/GlobalOrderNotifications";
 
 export default function RootLayout({
   children,
@@ -45,16 +47,20 @@ export default function RootLayout({
       <body
         className="min-h-full flex flex-col"
         style={{ background: "var(--bg-primary)", color: "var(--text-primary)" }}
+        suppressHydrationWarning
       >
         <ReactQueryProvider>
           <SessionProvider>
             <SessionSync />
-            <ThemeProvider>
-              <ToastProvider>
-                {children}
-                <BackToTop />
-              </ToastProvider>
-            </ThemeProvider>
+            <SocketProvider>
+              <GlobalOrderNotifications />
+              <ThemeProvider>
+                <ToastProvider>
+                  {children}
+                  <BackToTop />
+                </ToastProvider>
+              </ThemeProvider>
+            </SocketProvider>
           </SessionProvider>
         </ReactQueryProvider>
       </body>
