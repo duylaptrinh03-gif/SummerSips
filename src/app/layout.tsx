@@ -37,7 +37,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${inter.variable} h-full antialiased`}>
+    <html lang="vi" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Anti-FOUC: set theme trước khi paint đầu tiên */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
