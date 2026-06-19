@@ -1,31 +1,33 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { LazySearchOrb } from "@/components/three";
+import { drinkService } from "@/services/drinkService";
+import { Drink } from "@/types/drink";
 
 interface SearchResult {
   id: string;
   title: string;
+  subtitle?: string;
   category: string;
   url: string;
 }
 
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const SEARCH_DATA: SearchResult[] = [
-  { id: "1", title: "Cà phê sữa đá", category: "Thực đơn", url: "/thuc-don?search=ca+phe" },
-  { id: "2", title: "Trà đào cam sả", category: "Thực đơn", url: "/thuc-don?search=tra+dao" },
-  { id: "3", title: "Trà sữa trân châu", category: "Thực đơn", url: "/thuc-don?search=tra+sua" },
-  { id: "4", title: "Lịch sử đơn hàng", category: "Trang", url: "/don-hang" },
-  { id: "5", title: "Giỏ hàng của tôi", category: "Trang", url: "/gio-hang" },
-  { id: "6", title: "Cài đặt tài khoản", category: "Trang", url: "/cai-dat" },
+// Static page shortcuts
+const PAGE_RESULTS: SearchResult[] = [
+  { id: "p1", title: "Lịch sử đơn hàng", category: "Trang", url: "/don-hang" },
+  { id: "p2", title: "Giỏ hàng của tôi",  category: "Trang", url: "/gio-hang" },
+  { id: "p3", title: "Cài đặt tài khoản", category: "Trang", url: "/cai-dat" },
+  { id: "p4", title: "Dashboard",          category: "Trang", url: "/dashboard" },
 ];
 
 export function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [isHovered, setIsHovered] = useState(false);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -36,16 +38,19 @@ export function CommandPalette() {
         e.preventDefault();
         setIsOpen((open) => !open);
       }
-      if (e.key === "Escape") {
-        setIsOpen(false);
-      }
+      if (e.key === "Escape") setIsOpen(false);
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Auto-focus input when opened
+  // Fetch drinks khi mở lần đầu
   useEffect(() => {
+    if (isOpen && drinks.length === 0) {
+      drinkService.getDrinks().then((res) => {
+        if (res.statusCode === 200) setDrinks(res.data);
+      }).catch(() => {});
+    }
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
@@ -53,13 +58,22 @@ export function CommandPalette() {
     }
   }, [isOpen]);
 
-  // Filter results
-  const results = query
-    ? SEARCH_DATA.filter((item) =>
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        item.category.toLowerCase().includes(query.toLowerCase())
-      )
-    : SEARCH_DATA;
+  // Build results từ drinks thật + page shortcuts
+  const results = useMemo(() => {
+    const drinkResults: SearchResult[] = drinks.map((d) => ({
+      id: d._id,
+      title: d.name,
+      subtitle: d.category,
+      category: "Thực đơn",
+      url: `/thuc-don?search=${encodeURIComponent(d.name)}`,
+    }));
+    const all = [...drinkResults, ...PAGE_RESULTS];
+    if (!query.trim()) return all.slice(0, 8);
+    const q = query.toLowerCase();
+    return all.filter(
+      (r) => r.title.toLowerCase().includes(q) || r.subtitle?.toLowerCase().includes(q)
+    );
+  }, [drinks, query]);
 
   const handleSelect = (url: string) => {
     setIsOpen(false);
@@ -150,12 +164,17 @@ export function CommandPalette() {
                             <button
                               key={item.id}
                               onClick={() => handleSelect(item.url)}
-                              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-gray-800 transition-colors group text-left"
+                              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-orange-50 dark:hover:bg-gray-800 transition-colors group text-left"
                             >
-                              <span className="font-medium text-gray-700 dark:text-gray-200 group-hover:text-orange-600">
-                                {item.title}
-                              </span>
-                              <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <div>
+                                <span className="font-medium text-gray-700 dark:text-gray-200 group-hover:text-orange-600 block">
+                                  {item.title}
+                                </span>
+                                {item.subtitle && (
+                                  <span className="text-xs text-gray-400 group-hover:text-orange-400">{item.subtitle}</span>
+                                )}
+                              </div>
+                              <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-orange-500 shrink-0 ml-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                               </svg>
                             </button>

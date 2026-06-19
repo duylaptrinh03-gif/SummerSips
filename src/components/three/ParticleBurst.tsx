@@ -24,11 +24,14 @@ function Particles({ count = 100 }) {
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
 
-  useFrame((state) => {
+  useFrame(() => {
+    if (!mesh.current) return;
+
     particles.forEach((particle, i) => {
-      let { time, factor, speed, x, y, z } = particle;
+      const { factor, speed, x, y, z } = particle;
+      let { time } = particle;
       const t = (time += speed);
-      particles[i].time = t;
+      particles[i]!.time = t;
       
       dummy.position.set(
         x + Math.cos((t / 10) * factor) + (Math.sin(t * 1) * factor) / 10,
@@ -41,7 +44,7 @@ function Particles({ count = 100 }) {
       dummy.updateMatrix();
       mesh.current!.setMatrixAt(i, dummy.matrix);
     });
-    mesh.current!.instanceMatrix.needsUpdate = true;
+    mesh.current.instanceMatrix.needsUpdate = true;
   });
 
   return (

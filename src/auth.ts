@@ -28,7 +28,7 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
+declare module "@auth/core/jwt" {
   interface JWT {
     accessToken?: string;
     userId?: string;
@@ -63,9 +63,13 @@ const config: NextAuthConfig = {
             }
           );
 
-          if (!res.ok) return null;
+          if (!res.ok) {
+            const errBody = await res.text().catch(() => "");
+            console.error("[auth] login failed:", res.status, errBody);
+            return null;
+          }
 
-          // Backend trả về { statusCode, data: { user, accessToken } }
+          // Backend wrap qua TransformInterceptor: { statusCode, data: { accessToken, user }, totalResult }
           const json = (await res.json()) as {
             statusCode: number;
             data: {
@@ -73,30 +77,21 @@ const config: NextAuthConfig = {
               user?: {
                 id: string;
                 email: string;
-                fullName?: string;
                 name?: string;
                 role?: string;
               };
-              // Một số backend trả trực tiếp user fields
-              id?: string;
-              email?: string;
-              fullName?: string;
-              accessToken?: string;
-              role?: string;
             };
           };
 
-          if (!json.data) return null;
+          console.log("[auth] login response:", JSON.stringify(json));
+          if (!json.data?.accessToken || !json.data?.user) return null;
 
-          const data = json.data;
-
-          // Handle cả hai format: { data: { user, accessToken } } hoặc { data: { id, email, ... } }
-          const userData = data.user ?? data;
+          const userData = json.data.user;
           const userId = userData.id ?? "";
           const userEmail = userData.email ?? String(credentials.email);
-          const userName = userData.fullName ?? (userData as { name?: string }).name ?? userEmail;
+          const userName = userData.name ?? userEmail;
           const userRole = userData.role ?? "user";
-          const accessToken = data.accessToken ?? (data as { accessToken?: string }).accessToken;
+          const accessToken = json.data.accessToken;
 
           return {
             id: userId,
@@ -105,7 +100,8 @@ const config: NextAuthConfig = {
             role: userRole,
             accessToken,
           };
-        } catch {
+        } catch (e) {
+          console.error("[auth] authorize exception:", e);
           return null;
         }
       },
@@ -147,11 +143,11 @@ const config: NextAuthConfig = {
 
     async session({ session, token }) {
       // Expose token data ra client session
-      session.accessToken = token.accessToken;
-      session.user.id = token.userId ?? token.sub ?? "";
-      session.user.role = token.role;
-      if (token.name) session.user.name = token.name;
-      if (token.email) session.user.email = token.email;
+      session.accessToken = token.accessToken as string | undefined;
+      session.user.id = (token.userId ?? token.sub ?? "") as string;
+      session.user.role = token.role as string | undefined;
+      if (token.name) session.user.name = token.name as string;
+      if (token.email) session.user.email = token.email as string;
       return session;
     },
   },

@@ -1,13 +1,12 @@
 "use client";
-// NOTE: Metadata cho trang này được quản lý bởi (main)/layout.tsx
-// vì đây là Client Component, không thể export metadata trực tiếp.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useCartStore } from "@/store/useCartStore";
 import { drinkService } from "@/services/drinkService";
-import { Drink } from "@/types/drink";
+import { Drink, Category } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { formatGia } from "@/utils/formatter";
@@ -21,14 +20,32 @@ const ProductModal = dynamic(
   }
 );
 
-export default function PageDrink() {
+const CATEGORIES: Array<{ label: string; value: string; emoji: string }> = [
+  { label: "Tất cả",     value: "Tất cả",      emoji: "✨" },
+  { label: "Cà Phê",    value: "Cà Phê",      emoji: "☕" },
+  { label: "Trà Sữa",   value: "Trà Sữa",     emoji: "🧋" },
+  { label: "Trà Trái Cây", value: "Trà Trái Cây", emoji: "🍑" },
+  { label: "Sinh Tố",   value: "Sinh Tố",     emoji: "🥤" },
+  { label: "Nước Ép",   value: "Nước Ép",     emoji: "🍊" },
+];
+
+// ── Inner content (needs Suspense for useSearchParams) ────────────────────────
+function ThucDonContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
-  const getTotalCount = useCartStore((state) => state.getTotalCount);
-  const getFinalTotal = useCartStore((state) => state.getFinalTotal);
+  // Sync state với URL params
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [category, setCategory] = useState(searchParams.get("category") ?? "Tất cả");
+
+  const getTotalCount = useCartStore((s) => s.getTotalCount);
+  const getFinalTotal = useCartStore((s) => s.getFinalTotal);
   const totalCount = getTotalCount();
   const totalPrice = getFinalTotal();
 
@@ -37,11 +54,8 @@ export default function PageDrink() {
     setError(null);
     try {
       const res = await drinkService.getDrinks();
-      if (res.statusCode === 200) {
-        setDrinks(res.data);
-      } else {
-        setDrinks([]);
-      }
+      if (res.statusCode === 200) setDrinks(res.data);
+      else setDrinks([]);
     } catch (err) {
       setDrinks([]);
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi tải thực đơn.");
@@ -50,29 +64,56 @@ export default function PageDrink() {
     }
   };
 
-  useEffect(() => {
-    fetchDrinks();
-  }, []);
+  useEffect(() => { fetchDrinks(); }, []);
 
-  // ── Error state ──────────────────────────────────────────────────────────
+  // Đọc URL params khi navigation (e.g. từ CommandPalette)
+  useEffect(() => {
+    const urlSearch = searchParams.get("search") ?? "";
+    const urlCat = searchParams.get("category") ?? "Tất cả";
+    setSearch(urlSearch);
+    setCategory(urlCat);
+  }, [searchParams]);
+
+  // Cập nhật URL khi filter thay đổi
+  const updateUrl = (newSearch: string, newCategory: string) => {
+    const params = new URLSearchParams();
+    if (newSearch.trim()) params.set("search", newSearch.trim());
+    if (newCategory !== "Tất cả") params.set("category", newCategory);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const handleSearch = (val: string) => {
+    setSearch(val);
+    updateUrl(val, category);
+  };
+
+  const handleCategory = (val: string) => {
+    setCategory(val);
+    updateUrl(search, val);
+  };
+
+  // Filter client-side
+  const filtered = useMemo(() => {
+    let list = drinks;
+    if (category !== "Tất cả") list = list.filter((d) => d.category === category);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (d) => d.name.toLowerCase().includes(q) || d.description?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [drinks, category, search]);
+
   if (error) {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center gap-6 p-8"
-        style={{ background: "var(--bg-secondary)" }}
-      >
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-8" style={{ background: "var(--bg-secondary)" }}>
         <span className="text-7xl">😵</span>
         <div className="text-center">
-          <h2 className="text-xl font-black mb-2" style={{ color: "var(--text-primary)" }}>
-            Không thể tải thực đơn
-          </h2>
-          <p className="text-sm mb-6 max-w-sm" style={{ color: "var(--text-secondary)" }}>
-            {error}
-          </p>
-          <button
-            onClick={fetchDrinks}
-            className="px-6 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
-          >
+          <h2 className="text-xl font-black mb-2" style={{ color: "var(--text-primary)" }}>Không thể tải thực đơn</h2>
+          <p className="text-sm mb-6 max-w-sm" style={{ color: "var(--text-secondary)" }}>{error}</p>
+          <button onClick={fetchDrinks} className="px-6 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors">
             Thử lại
           </button>
         </div>
@@ -84,45 +125,100 @@ export default function PageDrink() {
     <div className="min-h-screen pb-40" style={{ background: "var(--bg-secondary)" }}>
       {/* Header Banner */}
       <section
-        className="py-16 px-4 text-center"
+        className="py-14 px-4 text-center"
         style={{ background: "linear-gradient(135deg, var(--bg-primary) 0%, #fff7ed 50%, var(--bg-primary) 100%)" }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="max-w-3xl mx-auto"
-        >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold mb-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold mb-4">
             🌊 Thực Đơn Tiêu Chuẩn Điểm 10
           </div>
-          <h1
-            className="text-4xl sm:text-5xl md:text-6xl font-black mb-6 leading-tight tracking-tight"
-            style={{ color: "var(--text-primary)" }}
-          >
+          <h1 className="text-4xl sm:text-5xl font-black mb-4 leading-tight" style={{ color: "var(--text-primary)" }}>
             Chọn Đồ Uống{" "}
             <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-              Yêu Thích Của Bạn
+              Yêu Thích
             </span>
           </h1>
-          <p className="text-lg" style={{ color: "var(--text-secondary)" }}>
-            Hương vị tươi mát, pha chế mới mỗi trưa hè.
-          </p>
+
+          {/* Search bar */}
+          <div className="relative max-w-lg mx-auto mt-6">
+            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Tìm tên đồ uống..."
+              className="w-full pl-12 pr-10 py-3.5 rounded-2xl text-sm font-medium border outline-none focus:border-orange-400 transition-colors shadow-sm"
+              style={{ background: "var(--bg-card)", borderColor: "var(--border-color)", color: "var(--text-primary)" }}
+            />
+            {search && (
+              <button
+                onClick={() => handleSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </motion.div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
-        {/* Count */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+        {/* Category Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => handleCategory(cat.value)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border transition-all ${
+                category === cat.value
+                  ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-100"
+                  : "border-transparent hover:bg-orange-50 hover:border-orange-100"
+              }`}
+              style={category === cat.value ? {} : { color: "var(--text-secondary)" }}
+            >
+              <span>{cat.emoji}</span>
+              {cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Result count */}
         {!isLoading && (
-          <p className="text-sm font-medium mb-4" style={{ color: "var(--text-muted)" }}>
-            {drinks.length} sản phẩm
+          <p className="text-sm font-medium mb-5" style={{ color: "var(--text-muted)" }}>
+            {search || category !== "Tất cả"
+              ? `${filtered.length} kết quả${search ? ` cho "${search}"` : ""}${category !== "Tất cả" ? ` trong "${category}"` : ""}`
+              : `${drinks.length} sản phẩm`}
           </p>
         )}
 
-        {/* Product Grid */}
+        {/* Grid */}
         <AnimatePresence mode="popLayout">
           {isLoading ? (
             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <ProductGridSkeleton count={8} />
+            </motion.div>
+          ) : filtered.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-24"
+            >
+              <p className="text-5xl mb-4">🔍</p>
+              <h3 className="text-lg font-black mb-2" style={{ color: "var(--text-primary)" }}>
+                Không tìm thấy đồ uống nào
+              </h3>
+              <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+                Thử tìm với từ khóa khác hoặc xem tất cả sản phẩm.
+              </p>
+              <button
+                onClick={() => { handleSearch(""); handleCategory("Tất cả"); }}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+              >
+                Xem tất cả
+              </button>
             </motion.div>
           ) : (
             <motion.div
@@ -132,12 +228,8 @@ export default function PageDrink() {
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             >
-              {drinks.map((drink) => (
-                <ProductCard
-                  key={drink._id}
-                  drink={drink}
-                  onClick={(d) => setSelectedDrink(d)}
-                />
+              {filtered.map((drink) => (
+                <ProductCard key={drink._id} drink={drink} onClick={(d) => setSelectedDrink(d)} />
               ))}
             </motion.div>
           )}
@@ -186,5 +278,17 @@ export default function PageDrink() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function PageDrink() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-secondary)" }}>
+        <span className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ThucDonContent />
+    </Suspense>
   );
 }

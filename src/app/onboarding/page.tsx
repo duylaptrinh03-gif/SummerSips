@@ -61,41 +61,48 @@ export default function OnboardingPage() {
               transition={{ duration: 0.4 }}
               className="space-y-6"
             >
-              <div className="space-y-2">
-                <span className="text-sm font-black text-orange-500 uppercase tracking-widest">
-                  Bước {currentStep + 1} / {STEPS.length}
-                </span>
-                <h1 className="text-4xl font-black leading-tight">
-                  {STEPS[currentStep].title}
-                </h1>
-                <p className="text-gray-400 text-lg leading-relaxed">
-                  {STEPS[currentStep].description}
-                </p>
-              </div>
+              {(() => {
+                const step = STEPS[currentStep]!;
+                return (
+                  <>
+                    <div className="space-y-2">
+                      <span className="text-sm font-black text-orange-500 uppercase tracking-widest">
+                        Bước {currentStep + 1} / {STEPS.length}
+                      </span>
+                      <h1 className="text-4xl font-black leading-tight">
+                        {step.title}
+                      </h1>
+                      <p className="text-gray-400 text-lg leading-relaxed">
+                        {step.description}
+                      </p>
+                    </div>
 
-              {STEPS[currentStep].options && (
-                <div className="grid grid-cols-2 gap-3 py-4">
-                  {STEPS[currentStep].options.map((opt) => (
+                    {step.options && (
+                      <div className="grid grid-cols-2 gap-3 py-4">
+                        {step.options.map((opt) => (
+                          <button
+                            key={opt}
+                            className="p-4 rounded-2xl border border-gray-800 hover:border-orange-500 hover:bg-orange-500/10 transition-all text-sm font-bold"
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <button
-                      key={opt}
-                      className="p-4 rounded-2xl border border-gray-800 hover:border-orange-500 hover:bg-orange-500/10 transition-all text-sm font-bold"
+                      onClick={handleNext}
+                      className="w-full py-4 rounded-2xl font-black text-lg shadow-2xl transition-all hover:-translate-y-1 active:translate-y-0"
+                      style={{
+                        background: "linear-gradient(135deg, #f97316, #ec4899)",
+                        boxShadow: "0 10px 40px rgba(249,115,22,0.3)",
+                      }}
                     >
-                      {opt}
+                      {step.action || "Tiếp tục"}
                     </button>
-                  ))}
-                </div>
-              )}
-
-              <button
-                onClick={handleNext}
-                className="w-full py-4 rounded-2xl font-black text-lg shadow-2xl transition-all hover:-translate-y-1 active:translate-y-0"
-                style={{
-                  background: "linear-gradient(135deg, #f97316, #ec4899)",
-                  boxShadow: "0 10px 40px rgba(249,115,22,0.3)",
-                }}
-              >
-                {STEPS[currentStep].action || "Tiếp tục"}
-              </button>
+                  </>
+                );
+              })()}
             </motion.div>
           </AnimatePresence>
 

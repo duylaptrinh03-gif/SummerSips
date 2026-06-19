@@ -5,7 +5,12 @@
       "Bash(grep -E \"\\(package\\\\.json|tsconfig|\\\\.ts$\\)\")",
       "Read(//c/Users/duypd/**)",
       "Bash(ls -la ./src/common/enums/)",
-      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")"
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")",
+      "Bash(node -e \"require.resolve\\('next-auth/jwt'\\)\")",
+      "Bash(node -e \"const p = require.resolve\\('next-auth/jwt'\\); console.log\\(p\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/next-auth/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
+      "Bash(node -e \"const pkg = require\\('./node_modules/@auth/core/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
+      "Bash(xargs grep -l \"CouponType\\\\|enum\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\auth",

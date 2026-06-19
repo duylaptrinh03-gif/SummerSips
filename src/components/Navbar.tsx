@@ -11,6 +11,76 @@ import { useSession, signOut } from "next-auth/react";
 import { LazyParticleBurst } from "@/components/three";
 import { useNotificationStore } from "@/store/useNotificationStore";
 
+// ── Logout Confirmation Dialog ────────────────────────────────────────────────
+function LogoutDialog({
+  user,
+  onConfirm,
+  onCancel,
+}: {
+  user: { name?: string | null; email?: string | null; image?: string | null };
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--bg-card)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Top gradient bar */}
+        <div className="h-1.5 bg-gradient-to-r from-orange-500 to-pink-500" />
+
+        <div className="p-6">
+          {/* Avatar + name */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="relative mb-3">
+              <img
+                src={user.image || `https://i.pravatar.cc/150?u=${user.email}`}
+                alt="Avatar"
+                className="w-16 h-16 rounded-full object-cover border-4 border-orange-100"
+              />
+              <span className="absolute -bottom-1 -right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-xs text-white font-black">
+                !
+              </span>
+            </div>
+            <h2 className="text-lg font-black mb-1" style={{ color: "var(--text-primary)" }}>
+              Đăng xuất?
+            </h2>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Bạn đang đăng xuất khỏi tài khoản
+            </p>
+            <p className="text-sm font-bold mt-0.5 text-orange-500">
+              {user.name || user.email}
+            </p>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-3 rounded-2xl text-sm font-bold border transition-colors hover:bg-gray-50"
+              style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+            >
+              Ở lại
+            </button>
+            <button
+              onClick={onConfirm}
+              className="flex-1 py-3 rounded-2xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-100"
+            >
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const navItems = [
   { label: "Trang Chủ", href: "/", emoji: "🏠" },
   { label: "Đồ Uống", href: "/thuc-don", emoji: "🍹" },
@@ -24,6 +94,7 @@ export default function Navbar() {
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
   const { data: session, status } = useSession();
   const notifications = useNotificationStore((s) => s.notifications);
   const [showBurst, setShowBurst] = useState(false);
@@ -31,9 +102,16 @@ export default function Navbar() {
   // Trigger burst when new notification arrives
   useEffect(() => {
     if (notifications.length > 0) {
-      setShowBurst(true);
-      const timer = setTimeout(() => setShowBurst(false), 2000);
-      return () => clearTimeout(timer);
+      // Dùng setTimeout để tránh gọi setState đồng bộ trực tiếp trong useEffect
+      const showTimer = setTimeout(() => {
+        setShowBurst(true);
+      }, 0);
+      const hideTimer = setTimeout(() => setShowBurst(false), 2000);
+      
+      return () => {
+        clearTimeout(showTimer);
+        clearTimeout(hideTimer);
+      };
     }
   }, [notifications.length]);
 
@@ -155,10 +233,13 @@ export default function Navbar() {
                   />
                 </Link>
                 <button
-                  onClick={() => signOut()}
-                  className="hidden sm:block text-xs font-black text-gray-500 hover:text-red-500 uppercase tracking-wider transition-colors"
+                  onClick={() => setShowLogout(true)}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black text-gray-500 hover:text-red-500 hover:bg-red-50 uppercase tracking-wider transition-all"
                 >
-                  Thoát
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Đăng xuất
                 </button>
               </div>
             ) : status === "unauthenticated" ? (
@@ -277,7 +358,18 @@ export default function Navbar() {
           </div>
 
           {/* Footer */}
-          <div className="mt-auto pt-8 border-t space-y-4" style={{ borderColor: "var(--border-color)" }}>
+          <div className="mt-auto pt-8 border-t space-y-3" style={{ borderColor: "var(--border-color)" }}>
+            {status === "authenticated" && (
+              <button
+                onClick={() => { setIsMenuOpen(false); setShowLogout(true); }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Đăng xuất
+              </button>
+            )}
             <div className="p-4 rounded-3xl bg-orange-50/50">
               <p className="text-xs text-orange-600/80 font-bold mb-1">Cần hỗ trợ?</p>
               <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>1900 1234 567</p>
@@ -290,6 +382,15 @@ export default function Navbar() {
       </div>
       {/* Particle Burst Overlay */}
       {showBurst && <LazyParticleBurst />}
+
+      {/* Logout Dialog */}
+      {showLogout && session && (
+        <LogoutDialog
+          user={session.user}
+          onConfirm={() => { setShowLogout(false); signOut({ callbackUrl: "/" }); }}
+          onCancel={() => setShowLogout(false)}
+        />
+      )}
     </>
   );
 }

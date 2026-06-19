@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { adminService, AdminStats } from "@/services/adminService";
 import { ORDER_STATUS_LABEL, OrderStatus } from "@/types/order";
 import { formatGia } from "@/utils/formatter";
@@ -97,7 +98,7 @@ export default function AdminPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-black" style={{ color: "var(--text-primary)" }}>
               Admin Dashboard
@@ -106,13 +107,24 @@ export default function AdminPage() {
               Tổng quan hoạt động cửa hàng
             </p>
           </div>
-          <button
-            onClick={fetchStats}
-            className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300"
-            style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
-          >
-            🔄 Làm mới
-          </button>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/products" className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors">
+              🧋 Sản phẩm
+            </Link>
+            <Link href="/admin/categories" className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300" style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}>
+              📂 Danh mục
+            </Link>
+            <Link href="/admin/coupons" className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300" style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}>
+              🎟️ Coupon
+            </Link>
+            <button
+              onClick={fetchStats}
+              className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 hover:border-orange-300"
+              style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+            >
+              🔄 Làm mới
+            </button>
+          </div>
         </div>
 
         {/* Stats grid */}

@@ -24,7 +24,7 @@ function OrdersContent() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await orderService.getAllOrders();
+      const res = await orderService.getMyOrders();
       if (res.statusCode === 200) {
         setOrders(res.data);
       } else {

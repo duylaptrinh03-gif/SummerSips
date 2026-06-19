@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { LazyAuthParticles } from "@/components/three";
@@ -123,28 +123,27 @@ export function LoginForm() {
       setError("Email không hợp lệ.");
       return;
     }
-    const payload = form
+    startTransition(async () => {
+      try {
+        const result = await signIn("credentials", {
+          email: form.email,
+          password: form.password,
+          redirect: false,
+        });
 
-    try {
-      const result = await signIn("credentials", {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError("Email hoặc mật khẩu không chính xác.");
-        addToast("Đăng nhập thất bại!", "error");
-      } else {
-        addToast("Đăng nhập thành công!", "success");
-        router.refresh();
-        router.push("/onboarding");
+        if (result?.error) {
+          setError("Email hoặc mật khẩu không chính xác.");
+          addToast("Đăng nhập thất bại!", "error");
+        } else {
+          addToast("Đăng nhập thành công! 🎉", "success");
+          router.push("/");
+        }
+      } catch {
+        addToast("Đã có lỗi xảy ra. Vui lòng thử lại!", "error");
       }
-    } catch (err) {
-      addToast("Đã có lỗi xảy ra. Vui lòng thử lại!", "error");
-    }
-
+    });
   };
+
 
   const handleSocial = async (provider: "google" | "github") => {
     try {
@@ -277,7 +276,7 @@ export function RegisterForm() {
     setIsLoading(true);
     try {
       // Chỉ gửi name/email/password — backend từ chối field lạ (forbidNonWhitelisted)
-      await authService.register({ name: form.name, email: form.email, password: form.password });
+      await authService.register({ fullName: form.name, email: form.email, password: form.password });
       addToast("Đăng ký thành công! Vui lòng đăng nhập.", "success");
       router.push("/dang-nhap");
     } catch (err) {

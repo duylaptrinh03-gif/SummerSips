@@ -62,8 +62,21 @@ export const orderService = {
   },
 
   /**
-   * GET /orders
-   * Fetch all orders.
+   * GET /orders/my
+   * Lịch sử đơn hàng của user hiện tại (yêu cầu đăng nhập).
+   */
+  async getMyOrders(): Promise<ApiResponse<Order[]>> {
+    const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse[]>>(
+      "/orders/my"
+    );
+    return {
+      ...response,
+      data: response.data.map(mapOrder),
+    };
+  },
+
+  /**
+   * GET /orders — Admin only
    */
   async getAllOrders(): Promise<ApiResponse<Order[]>> {
     const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse[]>>(

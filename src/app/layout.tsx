@@ -29,6 +29,7 @@ export const metadata: Metadata = {
 const themeInitScript = `(function(){try{var s=localStorage.getItem('summersips-theme');var t=s?JSON.parse(s).state?.theme:'light';document.documentElement.setAttribute('data-theme',t||'light')}catch(e){}})()`;
 
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { SessionSync } from "@/components/providers/SessionSync";
 
 export default function RootLayout({
   children,
@@ -47,6 +48,7 @@ export default function RootLayout({
       >
         <ReactQueryProvider>
           <SessionProvider>
+            <SessionSync />
             <ThemeProvider>
               <ToastProvider>
                 {children}
