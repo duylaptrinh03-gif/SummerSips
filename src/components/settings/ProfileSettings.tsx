@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
 import { useToastStore } from "@/store/useToastStore";
+import { useThemeStore } from "@/store/useThemeStore";
 import { useSession } from "next-auth/react";
 import { userService } from "@/services/userService";
 import { HttpError } from "@/lib/axiosInstance";
@@ -185,23 +186,49 @@ function DangerZone() {
   );
 }
 
+// ── Theme selector ────────────────────────────────────────────────────────────
+function ThemeSelector({ value, onChange }: { value: "light" | "dark"; onChange: (v: "light" | "dark") => void }) {
+  return (
+    <div className="flex gap-3">
+      {(["light", "dark"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => onChange(t)}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all ${
+            value === t ? "border-orange-400 shadow-sm" : ""
+          }`}
+          style={{
+            background: value === t ? "var(--bg-secondary)" : "transparent",
+            borderColor: value === t ? "#f97316" : "var(--border-color)",
+            color: "var(--text-primary)",
+          }}
+        >
+          {t === "light" ? "☀️ Sáng" : "🌙 Tối"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── Main settings page content ────────────────────────────────────────────────
 export function ProfileSettingsContent() {
   const { data: session, update } = useSession();
   const addToast = useToastStore((s) => s.addToast);
+  const { theme: storeTheme, setTheme } = useThemeStore();
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     name: "",
     email: "",
-    phone: "0901 234 567",
-    defaultAddress: "123 Nguyễn Du, Quận 1, TP.HCM",
+    phone: "",
+    defaultAddress: "",
     avatar: "🧑",
     notifications: {
       orderUpdates: true,
       promotions: true,
       newsletter: false,
     },
-    theme: "light",
+    theme: storeTheme,
   });
 
   // Tải profile từ API khi component mount
@@ -216,11 +243,14 @@ export function ProfileSettingsContent() {
             email: res.data.email || session.user.email || "",
             phone: res.data.phone || p.phone,
             defaultAddress: res.data.defaultAddress || p.defaultAddress,
+            avatar: res.data.avatar || p.avatar,
+            notifications: res.data.notifications
+              ? { ...p.notifications, ...res.data.notifications }
+              : p.notifications,
           }));
         }
       })
       .catch(() => {
-        // Fallback từ session nếu API lỗi
         setProfile((p) => ({
           ...p,
           name: session.user.name || "",
@@ -236,6 +266,12 @@ export function ProfileSettingsContent() {
   const setNotif = (key: keyof UserProfile["notifications"]) => (val: boolean) =>
     setProfile((p) => ({ ...p, notifications: { ...p.notifications, [key]: val } }));
 
+  // Thay đổi theme ngay lập tức, không cần nhấn lưu
+  const handleThemeChange = useCallback((t: "light" | "dark") => {
+    setTheme(t);
+    setProfile((p) => ({ ...p, theme: t }));
+  }, [setTheme]);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -243,8 +279,9 @@ export function ProfileSettingsContent() {
         name: profile.name,
         phone: profile.phone,
         defaultAddress: profile.defaultAddress,
+        avatar: profile.avatar,
+        notifications: profile.notifications,
       });
-      // Cập nhật tên trong NextAuth session
       await update({ name: profile.name });
       addToast("Đã lưu thông tin thành công!", "success");
     } catch (err) {
@@ -285,6 +322,13 @@ export function ProfileSettingsContent() {
         </FieldRow>
         <FieldRow label="Địa chỉ mặc định">
           <TextInput id="profile-address" value={profile.defaultAddress} onChange={set("defaultAddress")} placeholder="Số nhà, đường, quận, thành phố" />
+        </FieldRow>
+      </SettingsSection>
+
+      {/* Theme */}
+      <SettingsSection title="Giao Diện" description="Thay đổi có hiệu lực ngay lập tức, không cần lưu">
+        <FieldRow label="Chủ đề màu sắc">
+          <ThemeSelector value={profile.theme === "system" ? "light" : profile.theme} onChange={handleThemeChange} />
         </FieldRow>
       </SettingsSection>
 

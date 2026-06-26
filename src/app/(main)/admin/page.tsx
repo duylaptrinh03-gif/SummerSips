@@ -5,6 +5,7 @@ import { adminService, AdminStats } from "@/services/adminService";
 import { ORDER_STATUS_LABEL, OrderStatus } from "@/types/order";
 import { formatGia } from "@/utils/formatter";
 import { useToastStore } from "@/store/useToastStore";
+import { useAdminOrderSocket } from "@/hooks/useAdminOrderSocket";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -63,6 +64,17 @@ export default function AdminPage() {
   }, [addToast]);
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // Realtime: đơn mới → tự refresh stats + toast thông báo
+  useAdminOrderSocket({
+    onNewOrder: (event) => {
+      addToast(
+        `🔔 Đơn mới! ${event.customerName} đặt ${event.itemCount} món — ${formatGia(event.totalPrice)}`,
+        "success"
+      );
+      fetchStats();
+    },
+  });
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     setUpdatingId(orderId);

@@ -16,15 +16,38 @@ interface RawOrderResponse {
     phoneNumber: string;
     address: string;
   };
-  totalPrice: number;         // Backend field name
+  totalPrice: number;         // Backend field name (items total)
+  deliveryFee: number;
+  discountAmount: number;
+  couponCode: string | null;
   status: Order["status"];    // Backend field name (English enum values)
   orderedAt: string;          // Backend field name (ISO string)
   createdAt?: string;
   updatedAt?: string;
 }
 
+// ── Paginated response shape from BE ─────────────────────────────────────
+interface PaginatedRawOrders {
+  data: RawOrderResponse[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+}
+
+export interface PaginatedOrders {
+  orders: Order[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
+}
+
 // ── Map backend response → FE Order shape ────────────────────────────────
 function mapOrder(raw: RawOrderResponse): Order {
+  const deliveryFee = raw.deliveryFee ?? 0;
+  const discountAmount = raw.discountAmount ?? 0;
+  const totalAmount = raw.totalPrice ?? 0;
   return {
     _id: raw._id,
     id: raw.orderId,
@@ -34,7 +57,11 @@ function mapOrder(raw: RawOrderResponse): Order {
       phoneNumber: raw.recipientInfo?.phoneNumber,
       address: raw.recipientInfo?.address,
     },
-    totalAmount: raw.totalPrice,
+    totalAmount,
+    deliveryFee,
+    discountAmount,
+    couponCode: raw.couponCode ?? null,
+    finalAmount: totalAmount + deliveryFee - discountAmount,
     status: raw.status,
     createdAt: raw.orderedAt ?? raw.createdAt ?? "",
     updatedAt: raw.updatedAt,
@@ -62,29 +89,37 @@ export const orderService = {
   },
 
   /**
-   * GET /orders/my
+   * GET /orders/my?page=1&limit=10
    * Lịch sử đơn hàng của user hiện tại (yêu cầu đăng nhập).
    */
-  async getMyOrders(): Promise<ApiResponse<Order[]>> {
-    const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse[]>>(
-      "/orders/my"
+  async getMyOrders(page = 1, limit = 10): Promise<PaginatedOrders> {
+    const response = await axiosInstance.get<unknown, ApiResponse<PaginatedRawOrders>>(
+      `/orders/my?page=${page}&limit=${limit}`
     );
+    const raw = response.data;
     return {
-      ...response,
-      data: response.data.map(mapOrder),
+      orders: raw.data.map(mapOrder),
+      total: raw.total,
+      page: raw.page,
+      totalPages: raw.totalPages,
+      limit: raw.limit,
     };
   },
 
   /**
-   * GET /orders — Admin only
+   * GET /orders?page=1&limit=20 — Admin only
    */
-  async getAllOrders(): Promise<ApiResponse<Order[]>> {
-    const response = await axiosInstance.get<unknown, ApiResponse<RawOrderResponse[]>>(
-      "/orders"
+  async getAllOrders(page = 1, limit = 50): Promise<PaginatedOrders> {
+    const response = await axiosInstance.get<unknown, ApiResponse<PaginatedRawOrders>>(
+      `/orders?page=${page}&limit=${limit}`
     );
+    const raw = response.data;
     return {
-      ...response,
-      data: response.data.map(mapOrder),
+      orders: raw.data.map(mapOrder),
+      total: raw.total,
+      page: raw.page,
+      totalPages: raw.totalPages,
+      limit: raw.limit,
     };
   },
 
@@ -113,6 +148,20 @@ export const orderService = {
     const response = await axiosInstance.patch<unknown, ApiResponse<RawOrderResponse>>(
       `/orders/${id}/status`,
       { status: payload.status }
+    );
+    return {
+      ...response,
+      data: mapOrder(response.data),
+    };
+  },
+
+  /**
+   * PATCH /orders/:id/cancel
+   * Hủy đơn hàng — chỉ owner, chỉ khi status là pending.
+   */
+  async cancelOrder(id: string): Promise<ApiResponse<Order>> {
+    const response = await axiosInstance.patch<unknown, ApiResponse<RawOrderResponse>>(
+      `/orders/${id}/cancel`
     );
     return {
       ...response,

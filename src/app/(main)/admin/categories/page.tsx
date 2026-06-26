@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { categoryService, Category } from "@/services/categoryService";
 import { useToastStore } from "@/store/useToastStore";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 
 export default function AdminCategoriesPage() {
   const addToast = useToastStore((s) => s.addToast);
@@ -13,6 +14,7 @@ export default function AdminCategoriesPage() {
   const [editName, setEditName] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Category | null>(null);
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -58,8 +60,10 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDelete = async (cat: Category) => {
-    if (!confirm(`Xóa danh mục "${cat.name}"?`)) return;
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDelete) return;
+    const cat = pendingDelete;
+    setPendingDelete(null);
     setDeletingId(cat._id);
     try {
       await categoryService.remove(cat._id);
@@ -71,6 +75,8 @@ export default function AdminCategoriesPage() {
       setDeletingId(null);
     }
   };
+
+  const handleDelete = (cat: Category) => setPendingDelete(cat);
 
   const inputCls = "px-3 py-2 rounded-xl border text-sm outline-none focus:border-orange-400 transition-colors";
   const inputStyle = { background: "var(--bg-secondary)", borderColor: "var(--border-color)", color: "var(--text-primary)" };
@@ -195,6 +201,15 @@ export default function AdminCategoriesPage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Xóa danh mục?"
+        message={`Bạn có chắc muốn xóa danh mục "${pendingDelete?.name}"? Thao tác không thể hoàn tác.`}
+        confirmLabel="Xóa"
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

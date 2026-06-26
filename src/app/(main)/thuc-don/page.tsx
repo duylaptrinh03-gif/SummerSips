@@ -3,9 +3,12 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import dynamic from "next/dynamic";
+import { useSession } from "next-auth/react";
 import { useCartStore } from "@/store/useCartStore";
 import { drinkService } from "@/services/drinkService";
+import { orderService } from "@/services/orderService";
 import { Drink, Category } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
 import { ProductGridSkeleton } from "@/components/ui/Skeleton";
@@ -40,6 +43,12 @@ function ThucDonContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
 
+  // Recommendations
+  const { data: session } = useSession();
+  const [recommendations, setRecommendations] = useState<Drink[]>([]);
+  const [recoTitle, setRecoTitle] = useState("Phổ biến nhất 🔥");
+  const [recoCategory, setRecoCategory] = useState<string | null>(null);
+
   // Sync state với URL params
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [category, setCategory] = useState(searchParams.get("category") ?? "Tất cả");
@@ -65,6 +74,54 @@ function ThucDonContent() {
   };
 
   useEffect(() => { fetchDrinks(); }, []);
+
+  // Build recommendation list after drinks are loaded
+  useEffect(() => {
+    if (drinks.length === 0) return;
+
+    const buildReco = async () => {
+      if (session?.user) {
+        try {
+          const { orders } = await orderService.getMyOrders(1, 20);
+          if (orders.length > 0) {
+            const drinkMap = new Map(drinks.map((d) => [d._id, d]));
+            const catCount: Record<string, number> = {};
+            orders.forEach((o) => {
+              o.items.forEach((item) => {
+                const drink = drinkMap.get(item.drinkId);
+                if (drink?.category) {
+                  catCount[drink.category] = (catCount[drink.category] ?? 0) + item.quantity;
+                }
+              });
+            });
+            const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+            if (topCat) {
+              const orderedIds = new Set(orders.flatMap((o) => o.items.map((i) => i.drinkId)));
+              const unordered = drinks.filter((d) => d.category === topCat && !orderedIds.has(d._id));
+              const fallback = drinks.filter((d) => d.category === topCat);
+              const picks = (unordered.length >= 3 ? unordered : fallback).slice(0, 6);
+              if (picks.length > 0) {
+                setRecoTitle("Gợi ý cho bạn 🎯");
+                setRecoCategory(topCat);
+                setRecommendations(picks);
+                return;
+              }
+            }
+          }
+        } catch {
+          // fall through to popular
+        }
+      }
+      // Guest or no order history: sort by soldCount
+      const topSellers = [...drinks].sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0)).slice(0, 6);
+      setRecoTitle("Phổ biến nhất 🔥");
+      setRecoCategory(null);
+      setRecommendations(topSellers);
+    };
+
+    buildReco();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drinks, session]);
 
   // Đọc URL params khi navigation (e.g. từ CommandPalette)
   useEffect(() => {
@@ -184,6 +241,59 @@ function ThucDonContent() {
           ))}
         </div>
 
+        {/* Recommendations */}
+        {!search && category === "Tất cả" && recommendations.length > 0 && !isLoading && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black" style={{ color: "var(--text-primary)" }}>
+                {recoTitle}
+              </h2>
+              {recoCategory && (
+                <button
+                  onClick={() => handleCategory(recoCategory)}
+                  className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors"
+                >
+                  Xem thêm →
+                </button>
+              )}
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none -mx-1 px-1">
+              {recommendations.map((drink) => (
+                <button
+                  key={drink._id}
+                  onClick={() => setSelectedDrink(drink)}
+                  className="shrink-0 w-[168px] rounded-2xl overflow-hidden border text-left transition-all hover:shadow-md hover:-translate-y-0.5 active:scale-[0.97]"
+                  style={{ background: "var(--bg-card)", borderColor: "var(--border-color)" }}
+                >
+                  <div
+                    className="relative w-full h-28 overflow-hidden"
+                    style={{ background: "var(--bg-secondary)" }}
+                  >
+                    {drink.image ? (
+                      <Image src={drink.image} alt={drink.name} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">🧋</div>
+                    )}
+                    {drink.tag && (
+                      <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-full bg-orange-500 text-white">
+                        {drink.tag}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm font-bold leading-tight line-clamp-1" style={{ color: "var(--text-primary)" }}>
+                      {drink.name}
+                    </p>
+                    <p className="text-xs font-black mt-1.5 bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+                      {formatGia(drink.basePrice)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Result count */}
         {!isLoading && (
           <p className="text-sm font-medium mb-5" style={{ color: "var(--text-muted)" }}>
@@ -274,6 +384,8 @@ function ThucDonContent() {
             isOpen={true}
             drink={selectedDrink}
             onClose={() => setSelectedDrink(null)}
+            allDrinks={drinks}
+            onSelectDrink={(d) => setSelectedDrink(d)}
           />
         )}
       </AnimatePresence>

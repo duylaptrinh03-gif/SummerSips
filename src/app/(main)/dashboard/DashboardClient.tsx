@@ -8,12 +8,11 @@ import { userService } from "@/services/userService";
 import { Order } from "@/types/order";
 
 const STATUS_VI: Record<string, { label: string; cls: string }> = {
-  pending:    { label: "Chờ xác nhận", cls: "bg-yellow-100 text-yellow-700" },
-  confirmed:  { label: "Đã xác nhận",  cls: "bg-blue-100 text-blue-700"   },
-  processing: { label: "Đang pha chế", cls: "bg-indigo-100 text-indigo-700"},
-  delivering: { label: "Đang giao",    cls: "bg-purple-100 text-purple-700"},
-  completed:  { label: "Hoàn thành",   cls: "bg-green-100 text-green-700" },
-  cancelled:  { label: "Đã hủy",       cls: "bg-red-100 text-red-700"     },
+  pending:    { label: "Chờ xác nhận", cls: "bg-amber-100 text-amber-700"   },
+  preparing:  { label: "Đang pha chế", cls: "bg-blue-100 text-blue-700"     },
+  delivering: { label: "Đang giao",    cls: "bg-violet-100 text-violet-700" },
+  completed:  { label: "Hoàn thành",   cls: "bg-emerald-100 text-emerald-700" },
+  cancelled:  { label: "Đã hủy",       cls: "bg-red-100 text-red-700"       },
 };
 
 function formatDate(iso: string) {
@@ -34,7 +33,7 @@ export default function DashboardClient({ sessionName }: Props) {
   useEffect(() => {
     // Fetch real orders
     orderService.getMyOrders()
-      .then((res) => { if (res.statusCode === 200) setOrders(res.data); })
+      .then(({ orders }) => setOrders(orders))
       .catch(() => {})
       .finally(() => setLoadingOrders(false));
 
@@ -71,21 +70,21 @@ export default function DashboardClient({ sessionName }: Props) {
 
         {/* Stat Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="relative rounded-3xl overflow-hidden border bg-white dark:bg-gray-800 shadow-sm" style={{ borderColor: "var(--border-color)" }}>
+          <div className="relative rounded-3xl overflow-hidden border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
             <LazyStatCard
               color="#f97316"
               label="Tổng Đơn Hàng"
               value={loadingOrders ? "…" : String(orders.length)}
             />
           </div>
-          <div className="relative rounded-3xl overflow-hidden border bg-white dark:bg-gray-800 shadow-sm" style={{ borderColor: "var(--border-color)" }}>
+          <div className="relative rounded-3xl overflow-hidden border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
             <LazyStatCard
               color="#ec4899"
               label="Tổng Chi Tiêu"
               value={loadingOrders ? "…" : `${(totalAmount / 1000).toFixed(0)}k`}
             />
           </div>
-          <div className="relative rounded-3xl overflow-hidden border bg-white dark:bg-gray-800 shadow-sm" style={{ borderColor: "var(--border-color)" }}>
+          <div className="relative rounded-3xl overflow-hidden border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
             <LazyStatCard
               color="#8b5cf6"
               label="Hoàn Thành"
@@ -98,7 +97,7 @@ export default function DashboardClient({ sessionName }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Orders */}
           <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border shadow-sm" style={{ borderColor: "var(--border-color)" }}>
+            <div className="rounded-3xl p-6 border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Đơn Hàng Gần Đây</h2>
                 <Link href="/don-hang" className="text-sm font-semibold text-orange-500 hover:text-orange-600">
@@ -123,7 +122,7 @@ export default function DashboardClient({ sessionName }: Props) {
                   {recentOrders.map((order) => {
                     const statusInfo = STATUS_VI[order.status] ?? { label: order.status, cls: "bg-gray-100 text-gray-600" };
                     return (
-                      <div key={order._id} className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 dark:bg-gray-900 border border-transparent hover:border-orange-100 transition-colors">
+                      <div key={order._id} className="flex items-center justify-between p-4 rounded-2xl border border-transparent hover:border-orange-100 transition-colors" style={{ background: "var(--bg-secondary)" }}>
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-xl shrink-0">
                             🥤
@@ -165,22 +164,22 @@ export default function DashboardClient({ sessionName }: Props) {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 border shadow-sm" style={{ borderColor: "var(--border-color)" }}>
+            <div className="rounded-3xl p-6 border shadow-sm" style={{ borderColor: "var(--border-color)", background: "var(--bg-card)" }}>
               <h3 className="font-bold mb-4" style={{ color: "var(--text-primary)" }}>Thao Tác Nhanh</h3>
               <div className="grid grid-cols-2 gap-3">
-                <Link href="/thuc-don?category=tra-sua" className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group">
+                <Link href="/thuc-don?category=Trà Sữa" className="p-3 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group" style={{ background: "var(--bg-secondary)" }}>
                   <span className="text-2xl group-hover:scale-110 transition-transform">🧋</span>
                   <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Trà Sữa</span>
                 </Link>
-                <Link href="/thuc-don?category=tra-trai-cay" className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group">
+                <Link href="/thuc-don?category=Trà Trái Cây" className="p-3 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group" style={{ background: "var(--bg-secondary)" }}>
                   <span className="text-2xl group-hover:scale-110 transition-transform">🍹</span>
                   <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Trà Trái Cây</span>
                 </Link>
-                <Link href="/cai-dat" className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group">
+                <Link href="/cai-dat" className="p-3 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group" style={{ background: "var(--bg-secondary)" }}>
                   <span className="text-2xl group-hover:scale-110 transition-transform">⚙️</span>
                   <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Cài Đặt</span>
                 </Link>
-                <Link href="/don-hang" className="p-3 rounded-2xl bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group">
+                <Link href="/don-hang" className="p-3 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-orange-50 transition-colors group" style={{ background: "var(--bg-secondary)" }}>
                   <span className="text-2xl group-hover:scale-110 transition-transform">📦</span>
                   <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Theo Dõi</span>
                 </Link>

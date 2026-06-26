@@ -1,17 +1,48 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { Order, ORDER_STATUS_LABEL } from "@/types/order";
 import { formatNgayGio, formatGia } from "@/utils/formatter";
-import { calculateItemPrice } from "@/types/cart";
+import { calculateItemPrice, CartItem } from "@/types/cart";
 import Image from "next/image";
 import { OrderTimeline } from "./OrderTimeline";
+import { useCartStore } from "@/store/useCartStore";
+import { useToastStore } from "@/store/useToastStore";
+import { taoCartId } from "@/utils/formatter";
+import { orderService } from "@/services/orderService";
 
 interface OrderCardProps {
   order: Order;
   isNew?: boolean;
 }
 
-export function OrderCard({ order, isNew }: OrderCardProps) {
+export function OrderCard({ order, isNew, onCancelled }: OrderCardProps & { onCancelled?: (orderId: string) => void }) {
+  const addItem = useCartStore((s) => s.addItem);
+  const addToast = useToastStore((s) => s.addToast);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleReorder = () => {
+    order.items.forEach((item) => {
+      const reorderedItem: CartItem = { ...item, cartId: taoCartId() };
+      addItem(reorderedItem);
+    });
+    addToast(`🛒 Đã thêm ${order.items.length} món vào giỏ hàng!`, "success");
+  };
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      await orderService.cancelOrder(order._id);
+      addToast("Đã hủy đơn hàng thành công", "success");
+      onCancelled?.(order._id);
+    } catch {
+      addToast("Không thể hủy đơn hàng. Vui lòng thử lại!", "error");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const statusConfig: Record<string, { cls: string; dot: string }> = {
     pending:    { cls: "bg-amber-100 text-amber-700 border-amber-200",      dot: "bg-amber-400" },
     preparing:  { cls: "bg-blue-100 text-blue-700 border-blue-200",         dot: "bg-blue-400" },
@@ -61,10 +92,10 @@ export function OrderCard({ order, isNew }: OrderCardProps) {
 
         <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center">
           <span className="text-xs hidden sm:block" style={{ color: "var(--text-muted)" }}>
-            Tổng cộng
+            Tổng thanh toán
           </span>
           <span className="font-black text-xl bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-            {formatGia(order.totalAmount)}
+            {formatGia(order.finalAmount ?? order.totalAmount)}
           </span>
         </div>
       </div>
@@ -142,9 +173,39 @@ export function OrderCard({ order, isNew }: OrderCardProps) {
         </div>
       </div>
 
+      {/* Price breakdown */}
+      <div className="px-5 py-3 border-t" style={{ borderColor: "var(--border-color)" }}>
+        <div className="space-y-1.5 text-sm">
+          <div className="flex justify-between">
+            <span style={{ color: "var(--text-muted)" }}>Tạm tính</span>
+            <span style={{ color: "var(--text-secondary)" }}>{formatGia(order.totalAmount)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: "var(--text-muted)" }}>Phí giao hàng</span>
+            <span style={{ color: order.deliveryFee === 0 ? "#10b981" : "var(--text-secondary)" }}>
+              {order.deliveryFee === 0 ? "Miễn phí" : formatGia(order.deliveryFee)}
+            </span>
+          </div>
+          {order.discountAmount > 0 && (
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-muted)" }}>
+                Giảm giá{order.couponCode ? ` (${order.couponCode})` : ""}
+              </span>
+              <span className="text-emerald-600 font-semibold">-{formatGia(order.discountAmount)}</span>
+            </div>
+          )}
+          <div className="flex justify-between pt-2 border-t font-black" style={{ borderColor: "var(--border-light)" }}>
+            <span style={{ color: "var(--text-primary)" }}>Tổng thanh toán</span>
+            <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
+              {formatGia(order.finalAmount ?? order.totalAmount)}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Status footer */}
       <div
-        className="px-5 py-4 border-t flex items-center justify-between"
+        className="px-5 py-4 border-t flex items-center justify-between gap-3 flex-wrap"
         style={{ background: "var(--bg-secondary)", borderColor: "var(--border-color)" }}
       >
         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${cfg.cls}`}>
@@ -157,11 +218,36 @@ export function OrderCard({ order, isNew }: OrderCardProps) {
           {ORDER_STATUS_LABEL[order.status]}
         </div>
 
-        {order.status === "pending" && (
-          <button className="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors">
-            Hủy đơn
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
+          <Link
+            href={`/don-hang/${order._id}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors hover:bg-blue-50 hover:border-blue-200"
+            style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+          >
+            🧾 Hóa đơn
+          </Link>
+          <button
+            onClick={handleReorder}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-orange-600 bg-orange-50 hover:bg-orange-100 transition-colors"
+          >
+            🔄 Đặt lại
           </button>
-        )}
+          {order.status === "pending" && (
+            <button
+              onClick={handleCancel}
+              disabled={isCancelling}
+              className="text-xs font-bold transition-colors disabled:opacity-50"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {isCancelling ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Đang hủy...
+                </span>
+              ) : "Hủy đơn"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

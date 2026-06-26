@@ -21,7 +21,11 @@ export interface Order {
   id: string;               // Readable code — mapped from backend orderId
   items: CartItem[];
   recipientInfo: RecipientInfo;
-  totalAmount: number;      // Mapped from backend totalPrice
+  totalAmount: number;      // Mapped from backend totalPrice (items only)
+  deliveryFee: number;      // Phí giao hàng
+  discountAmount: number;   // Số tiền được giảm
+  couponCode: string | null; // Mã coupon đã áp dụng
+  finalAmount: number;      // totalAmount + deliveryFee - discountAmount
   status: OrderStatus;
   createdAt: string;        // Mapped from backend orderedAt
   updatedAt?: string;
@@ -31,6 +35,9 @@ export interface Order {
 export interface CreateOrderPayload {
   recipientInfo: RecipientInfo;
   items: CartItem[];
+  deliveryFee?: number;
+  couponCode?: string;
+  discountAmount?: number;
 }
 
 // ── Payload to update order status (Admin — PATCH /orders/:id/status) ─────

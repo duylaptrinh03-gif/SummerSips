@@ -1,6 +1,12 @@
 import axiosInstance from "@/lib/axiosInstance";
 import type { ApiResponse } from "@/types/api";
 
+export interface UserNotifications {
+  orderUpdates: boolean;
+  promotions: boolean;
+  newsletter: boolean;
+}
+
 export interface UserProfile {
   _id: string;
   name: string;
@@ -8,12 +14,16 @@ export interface UserProfile {
   phone: string;
   defaultAddress: string;
   role: string;
+  avatar?: string;
+  notifications?: UserNotifications;
 }
 
 export interface UpdateUserPayload {
   name?: string;
   phone?: string;
   defaultAddress?: string;
+  avatar?: string;
+  notifications?: Partial<UserNotifications>;
 }
 
 export const userService = {

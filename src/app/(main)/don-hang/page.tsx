@@ -20,27 +20,28 @@ function OrdersContent() {
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
 
-  const fetchOrders = async () => {
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_LIMIT = 10;
+
+  const fetchOrders = useCallback(async (p = 1) => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await orderService.getMyOrders();
-      if (res.statusCode === 200) {
-        setOrders(res.data);
-      } else {
-        setOrders([]);
-      }
+      const res = await orderService.getMyOrders(p, PAGE_LIMIT);
+      setOrders(res.orders);
+      setTotalPages(res.totalPages);
     } catch (err) {
       setOrders([]);
       setError(err instanceof Error ? err.message : "Có lỗi xảy ra khi kết nối đến máy chủ.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(page);
+  }, [page, fetchOrders]);
 
   // Show success animation when redirected from checkout
   useEffect(() => {
@@ -93,7 +94,7 @@ function OrdersContent() {
           {error}
         </p>
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders(page)}
           className="px-6 py-3 rounded-xl font-bold text-sm bg-orange-500 text-white hover:bg-orange-600 transition-colors"
         >
           Thử lại
@@ -133,13 +134,48 @@ function OrdersContent() {
 
       <div className="space-y-5">
         {orders.map((order) => (
-          <OrderCard key={order._id} order={order} isNew={order.id === newOrderId} />
+          <OrderCard
+            key={order._id}
+            order={order}
+            isNew={order.id === newOrderId}
+            onCancelled={(id) =>
+              setOrders((prev) =>
+                prev.map((o) => (o._id === id ? { ...o, status: "cancelled" } : o))
+              )
+            }
+          />
         ))}
       </div>
 
-      <div className="mt-8 flex justify-center">
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors disabled:opacity-40 hover:bg-orange-50"
+            style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+          >
+            ← Trước
+          </button>
+          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            Trang {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors disabled:opacity-40 hover:bg-orange-50"
+            style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+          >
+            Sau →
+          </button>
+        </div>
+      )}
+
+      {/* Refresh */}
+      <div className="mt-4 flex justify-center">
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders(page)}
           className="px-6 py-2.5 rounded-xl text-sm font-semibold border transition-colors hover:bg-orange-50 hover:border-orange-300"
           style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
         >

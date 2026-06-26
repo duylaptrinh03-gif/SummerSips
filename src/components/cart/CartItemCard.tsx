@@ -32,7 +32,8 @@ export function CartItemCard({ item }: CartItemCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="flex flex-col sm:flex-row gap-4 p-4 bg-white border border-gray-100 rounded-3xl shadow-sm relative group"
+      className="flex flex-col sm:flex-row gap-4 p-4 rounded-3xl relative group"
+      style={{ background: "var(--bg-card)", border: "1px solid var(--border-color)", boxShadow: "var(--shadow-sm)" }}
     >
       {/* Hình ảnh */}
       <div className="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-orange-50 mx-auto sm:mx-0">
@@ -47,7 +48,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
       {/* Thông tin */}
       <div className="flex flex-col flex-1 gap-1">
         <div className="flex justify-between items-start gap-4">
-          <h3 className="font-bold text-gray-900 text-lg leading-tight">
+          <h3 className="font-bold text-lg leading-tight" style={{ color: "var(--text-primary)" }}>
             {item.name}
           </h3>
           <button
@@ -59,7 +60,7 @@ export function CartItemCard({ item }: CartItemCardProps) {
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 leading-relaxed max-w-[90%]">
+        <p className="text-xs leading-relaxed max-w-[90%]" style={{ color: "var(--text-secondary)" }}>
           {optionsDesc}
         </p>
 

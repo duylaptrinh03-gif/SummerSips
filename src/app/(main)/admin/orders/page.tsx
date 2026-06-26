@@ -6,6 +6,7 @@ import { Order, OrderStatus, ORDER_STATUS_LABEL } from "@/types/order";
 import { useToastStore } from "@/store/useToastStore";
 import { formatGia } from "@/utils/formatter";
 import { calculateItemPrice } from "@/types/cart";
+import { useAdminOrderSocket } from "@/hooks/useAdminOrderSocket";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -138,20 +139,45 @@ export default function AdminOrdersPage() {
   const [search, setSearch]         = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage]             = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal]           = useState(0);
+  const PAGE_LIMIT = 30;
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (p = page) => {
     setLoading(true);
     try {
-      const res = await orderService.getAllOrders();
-      if (res.statusCode === 200) setOrders(res.data);
+      const res = await orderService.getAllOrders(p, PAGE_LIMIT);
+      setOrders(res.orders);
+      setTotalPages(res.totalPages);
+      setTotal(res.total);
     } catch {
       addToast("Không thể tải danh sách đơn hàng", "error");
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addToast, page]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { fetchOrders(page); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Realtime: new order → insert vào đầu list + toast
+  useAdminOrderSocket({
+    onNewOrder: (event) => {
+      addToast(`🔔 Đơn mới! ${event.customerName} — ${formatGia(event.totalPrice)}`, "success");
+      // Tải lại trang đầu để đảm bảo order mới nhất lên đầu
+      if (page === 1) {
+        fetchOrders(1);
+      } else {
+        setPage(1);
+      }
+    },
+    onStatusUpdated: (event) => {
+      setOrders((prev) =>
+        prev.map((o) => (o.id === event.orderId ? { ...o, status: event.newStatus } : o))
+      );
+    },
+  });
 
   const handleStatusChange = async (order: Order, newStatus: OrderStatus) => {
     if (order.status === newStatus) return;
@@ -200,11 +226,11 @@ export default function AdminOrdersPage() {
               Quản Lý Đơn Hàng
             </h1>
             <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>
-              {orders.length} đơn tổng · {counts.pending ?? 0} chờ xử lý · {counts.delivering ?? 0} đang giao
+              {total} đơn tổng · {counts.pending ?? 0} chờ xử lý · {counts.delivering ?? 0} đang giao
             </p>
           </div>
           <button
-            onClick={fetchOrders}
+            onClick={() => fetchOrders()}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-colors hover:bg-orange-50 disabled:opacity-50"
             style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
@@ -415,10 +441,35 @@ export default function AdminOrdersPage() {
           )}
         </div>
 
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors disabled:opacity-40 hover:bg-orange-50"
+              style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+            >
+              ← Trước
+            </button>
+            <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              Trang {page} / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-4 py-2 rounded-xl text-sm font-bold border transition-colors disabled:opacity-40 hover:bg-orange-50"
+              style={{ borderColor: "var(--border-color)", color: "var(--text-secondary)" }}
+            >
+              Sau →
+            </button>
+          </div>
+        )}
+
         {/* Footer count */}
-        {!loading && filtered.length > 0 && (
-          <p className="text-xs text-center mt-4" style={{ color: "var(--text-muted)" }}>
-            Hiển thị {filtered.length} / {orders.length} đơn hàng
+        {!loading && orders.length > 0 && (
+          <p className="text-xs text-center mt-3" style={{ color: "var(--text-muted)" }}>
+            Hiển thị {filtered.length} / {orders.length} đơn (tổng {total} đơn)
           </p>
         )}
       </div>

@@ -5,6 +5,7 @@ import { drinkService } from "@/services/drinkService";
 import { Drink, CreateDrinkPayload, SizeOption, ToppingOption } from "@/types/drink";
 import { useToastStore } from "@/store/useToastStore";
 import { formatGia } from "@/utils/formatter";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -334,6 +335,7 @@ export default function AdminProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState("Tất cả");
   const [modalDrink, setModalDrink] = useState<Drink | null | "new">(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Drink | null>(null);
 
   const fetchDrinks = useCallback(async () => {
     setLoading(true);
@@ -359,8 +361,10 @@ export default function AdminProductsPage() {
     setFiltered(list);
   }, [drinks, search, categoryFilter]);
 
-  const handleDelete = async (drink: Drink) => {
-    if (!confirm(`Xóa sản phẩm "${drink.name}"? Thao tác không thể hoàn tác.`)) return;
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDelete) return;
+    const drink = pendingDelete;
+    setPendingDelete(null);
     setDeletingId(drink._id);
     try {
       await drinkService.deleteDrink(drink._id);
@@ -372,6 +376,8 @@ export default function AdminProductsPage() {
       setDeletingId(null);
     }
   };
+
+  const handleDelete = (drink: Drink) => setPendingDelete(drink);
 
   return (
     <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>
@@ -522,6 +528,15 @@ export default function AdminProductsPage() {
           onSaved={fetchDrinks}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Xóa sản phẩm?"
+        message={`Bạn có chắc muốn xóa "${pendingDelete?.name}"? Thao tác không thể hoàn tác.`}
+        confirmLabel="Xóa"
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

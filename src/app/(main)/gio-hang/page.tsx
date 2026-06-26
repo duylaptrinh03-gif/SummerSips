@@ -102,6 +102,9 @@ export default function PageCart() {
         address: address.trim(),
       },
       items,
+      deliveryFee,
+      couponCode: couponCode || undefined,
+      discountAmount: discountAmount || undefined,
     };
 
     try {

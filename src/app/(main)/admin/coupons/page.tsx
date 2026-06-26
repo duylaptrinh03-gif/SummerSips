@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { couponService, Coupon, CouponType } from "@/services/couponService";
 import { useToastStore } from "@/store/useToastStore";
 import { formatGia } from "@/utils/formatter";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 
 const TYPE_LABEL: Record<CouponType, string> = {
   percent:  "Giảm %",
@@ -156,6 +157,7 @@ export default function AdminCouponsPage() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Coupon | null | "new">(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Coupon | null>(null);
 
   const fetchCoupons = useCallback(async () => {
     setLoading(true);
@@ -181,8 +183,10 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const handleDelete = async (c: Coupon) => {
-    if (!confirm(`Xóa coupon "${c.code}"?`)) return;
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDelete) return;
+    const c = pendingDelete;
+    setPendingDelete(null);
     setDeletingId(c._id);
     try {
       await couponService.remove(c._id);
@@ -194,6 +198,8 @@ export default function AdminCouponsPage() {
       setDeletingId(null);
     }
   };
+
+  const handleDelete = (c: Coupon) => setPendingDelete(c);
 
   return (
     <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>
@@ -298,6 +304,15 @@ export default function AdminCouponsPage() {
           onSaved={fetchCoupons}
         />
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Xóa coupon?"
+        message={`Bạn có chắc muốn xóa coupon "${pendingDelete?.code}"? Thao tác không thể hoàn tác.`}
+        confirmLabel="Xóa"
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

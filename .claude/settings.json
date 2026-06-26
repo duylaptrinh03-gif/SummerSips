@@ -11,7 +11,9 @@
       "Bash(node -e \"const pkg = require\\('./node_modules/next-auth/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
       "Bash(node -e \"const pkg = require\\('./node_modules/@auth/core/package.json'\\); console.log\\(JSON.stringify\\(pkg.exports?.['./jwt'], null, 2\\)\\)\")",
       "Bash(xargs grep -l \"CouponType\\\\|enum\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Read(//mnt/c/Users/duypd/Duan/TNE/**)",
+      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\duypd\\\\\\\\Duan\\\\\\\\TNE\\\\\\\\drink-shop-be-mongo\\\\\\\\\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\auth",

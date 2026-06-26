@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import type { ApiResponse, ApiError } from "@/types/api";
-import { getSession } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 
 // Re-export ApiResponse for backward-compat with any file that imports from here
 export type { ApiResponse };
@@ -65,7 +65,10 @@ axiosInstance.interceptors.response.use(
       : serverMessage || error.message || "Có lỗi xảy ra. Vui lòng thử lại!";
 
     if (status === 401) {
-      console.warn("[API 401] Unauthorized:", normalizedMessage);
+      console.warn("[API 401] Unauthorized — session hết hạn, đang đăng xuất...");
+      if (typeof window !== "undefined") {
+        signOut({ callbackUrl: "/dang-nhap" });
+      }
     } else if (status === 403) {
       console.warn("[API 403] Forbidden:", normalizedMessage);
     } else if (status === 404) {
