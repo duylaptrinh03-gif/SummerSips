@@ -4,10 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 import { orderService } from "@/services/orderService";
 import { Order } from "@/types/order";
 import { OrderCard } from "@/components/order/OrderCard";
+import { OrderListSkeleton } from "@/components/ui/Skeleton";
 import { SuccessAnimation } from "@/components/order/SuccessAnimation";
+import { RatingDialog } from "@/components/order/RatingDialog";
+import { useReviewStore } from "@/store/useReviewStore";
 import { useOrderSocket, OrderStatusUpdatedEvent } from "@/hooks/useOrderSocket";
 
 // ── Orders content (needs Suspense for useSearchParams) ────────────────────
@@ -16,6 +20,9 @@ function OrdersContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [ratingOrder, setRatingOrder] = useState<Order | null>(null);
+  const [pendingRatingId, setPendingRatingId] = useState<string | null>(null);
+  const hasReviewed = useReviewStore((s) => s.hasReviewed);
 
   const searchParams = useSearchParams();
   const newOrderId = searchParams.get("new");
@@ -52,6 +59,16 @@ function OrdersContent() {
     }
   }, [newOrderId]);
 
+  // Khi pendingRatingId có giá trị, tìm order tương ứng và show dialog
+  useEffect(() => {
+    if (!pendingRatingId) return;
+    const order = orders.find((o) => o.id === pendingRatingId || o._id === pendingRatingId);
+    if (order && !hasReviewed(order._id)) {
+      setRatingOrder(order);
+    }
+    setPendingRatingId(null);
+  }, [orders, pendingRatingId, hasReviewed]);
+
   // Cập nhật status order trong state khi nhận WebSocket event
   const handleOrderStatusUpdated = useCallback((event: OrderStatusUpdatedEvent) => {
     setOrders((prev) =>
@@ -61,22 +78,17 @@ function OrdersContent() {
           : order,
       ),
     );
+    // Trigger rating dialog khi đơn hoàn thành
+    if (event.newStatus === "completed") {
+      setPendingRatingId(event.orderId);
+    }
   }, []);
 
   useOrderSocket(handleOrderStatusUpdated);
 
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
-    return (
-      <div className="flex justify-center p-20">
-        <div className="flex flex-col items-center gap-4">
-          <span className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
-            Đang tải đơn hàng...
-          </p>
-        </div>
-      </div>
-    );
+    return <OrderListSkeleton count={4} />;
   }
 
   // ── Error ────────────────────────────────────────────────────────────────
@@ -143,9 +155,23 @@ function OrdersContent() {
                 prev.map((o) => (o._id === id ? { ...o, status: "cancelled" } : o))
               )
             }
+            onRate={(o) => setRatingOrder(o)}
           />
         ))}
       </div>
+
+      {/* Rating dialog */}
+      <AnimatePresence>
+        {ratingOrder && (
+          <RatingDialog
+            key={ratingOrder._id}
+            orderId={ratingOrder._id}
+            orderCode={ratingOrder.id}
+            items={ratingOrder.items}
+            onClose={() => setRatingOrder(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Pagination */}
       {totalPages > 1 && (

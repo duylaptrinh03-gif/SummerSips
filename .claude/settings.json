@@ -13,7 +13,9 @@
       "Bash(xargs grep -l \"CouponType\\\\|enum\")",
       "Bash(npx tsc *)",
       "Read(//mnt/c/Users/duypd/Duan/TNE/**)",
-      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\duypd\\\\\\\\Duan\\\\\\\\TNE\\\\\\\\drink-shop-be-mongo\\\\\\\\\")"
+      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\duypd\\\\\\\\Duan\\\\\\\\TNE\\\\\\\\drink-shop-be-mongo\\\\\\\\\")",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\duypd\\\\Duan\\\\TNE\\\\drink-app\\\\src\" -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"c:\\\\Users\\\\duypd\\\\Duan\\\\TNE\\\\drink-app\\\\\", \"\"\\) })",
+      "Bash(xargs cat)"
     ],
     "additionalDirectories": [
       "c:\\Users\\duypd\\Duan\\TNE\\drink-shop-be-mongo\\src\\auth",

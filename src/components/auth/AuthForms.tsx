@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { LazyAuthParticles } from "@/components/three";
 import { useToastStore } from "@/store/useToastStore";
 import { authService } from "@/services/authService";
@@ -33,26 +34,44 @@ function AuthInput({
   placeholder?: string;
   disabled?: boolean;
 }) {
+  const isPassword = type === "password";
+  const [showPassword, setShowPassword] = useState(false);
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="block text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
         {label}
       </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoComplete={type === "password" ? "current-password" : "email"}
-        className="w-full px-4 py-3 rounded-2xl border text-sm outline-none transition-all focus:ring-2 focus:ring-orange-300 focus:border-orange-400 disabled:opacity-50"
-        style={{
-          background: "var(--bg-secondary)",
-          borderColor: "var(--border-color)",
-          color: "var(--text-primary)",
-        }}
-      />
+      <div className="relative">
+        <input
+          id={id}
+          type={inputType}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          autoComplete={isPassword ? "current-password" : "email"}
+          className="w-full px-4 py-3 rounded-2xl border text-sm outline-none transition-all focus:ring-2 focus:ring-orange-300 focus:border-orange-400 disabled:opacity-50"
+          style={{
+            background: "var(--bg-secondary)",
+            borderColor: "var(--border-color)",
+            color: "var(--text-primary)",
+            paddingRight: isPassword ? "2.75rem" : undefined,
+          }}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg transition-colors hover:bg-black/10"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

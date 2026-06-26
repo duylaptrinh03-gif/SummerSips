@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import type { ApiResponse, ApiError } from "@/types/api";
-import { getSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
+import { useUserStore } from "@/store/useUserStore";
 
 // Re-export ApiResponse for backward-compat with any file that imports from here
 export type { ApiResponse };
@@ -29,12 +30,13 @@ const axiosInstance = axios.create({
 });
 
 // ── Request Interceptor ───────────────────────────────────────────────────
+// Đọc token từ Zustand store (đã được SessionSync đồng bộ) — không gọi network
 axiosInstance.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
+  (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
-      const session = await getSession();
-      if (session?.accessToken) {
-        config.headers.Authorization = `Bearer ${session.accessToken}`;
+      const token = useUserStore.getState().user?.accessToken;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
     }
     return config;

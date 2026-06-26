@@ -11,7 +11,7 @@ import { drinkService } from "@/services/drinkService";
 import { orderService } from "@/services/orderService";
 import { Drink, Category } from "@/types/drink";
 import { ProductCard } from "@/components/product/ProductCard";
-import { ProductGridSkeleton } from "@/components/ui/Skeleton";
+import { ProductGridSkeleton, RecoRowSkeleton } from "@/components/ui/Skeleton";
 import { formatGia } from "@/utils/formatter";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,6 +52,7 @@ function ThucDonContent() {
   // Sync state với URL params
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [category, setCategory] = useState(searchParams.get("category") ?? "Tất cả");
+  const [sortBy, setSortBy] = useState<"popular" | "price-asc" | "price-desc" | "rating">("popular");
 
   const getTotalCount = useCartStore((s) => s.getTotalCount);
   const getFinalTotal = useCartStore((s) => s.getFinalTotal);
@@ -150,7 +151,7 @@ function ThucDonContent() {
     updateUrl(search, val);
   };
 
-  // Filter client-side
+  // Filter + sort client-side
   const filtered = useMemo(() => {
     let list = drinks;
     if (category !== "Tất cả") list = list.filter((d) => d.category === category);
@@ -160,8 +161,13 @@ function ThucDonContent() {
         (d) => d.name.toLowerCase().includes(q) || d.description?.toLowerCase().includes(q)
       );
     }
-    return list;
-  }, [drinks, category, search]);
+    switch (sortBy) {
+      case "price-asc":  return [...list].sort((a, b) => a.basePrice - b.basePrice);
+      case "price-desc": return [...list].sort((a, b) => b.basePrice - a.basePrice);
+      case "rating":     return [...list].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      default:           return [...list].sort((a, b) => (b.soldCount ?? 0) - (a.soldCount ?? 0));
+    }
+  }, [drinks, category, search, sortBy]);
 
   if (error) {
     return (
@@ -222,24 +228,50 @@ function ThucDonContent() {
       </section>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-        {/* Category Tabs */}
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => handleCategory(cat.value)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border transition-all ${
-                category === cat.value
-                  ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-100"
-                  : "border-transparent hover:bg-orange-50 hover:border-orange-100"
-              }`}
-              style={category === cat.value ? {} : { color: "var(--text-secondary)" }}
-            >
-              <span>{cat.emoji}</span>
-              {cat.label}
-            </button>
-          ))}
+        {/* Category Tabs + Sort */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none flex-1">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => handleCategory(cat.value)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap border transition-all ${
+                  category === cat.value
+                    ? "bg-orange-500 border-orange-500 text-white shadow-md shadow-orange-100"
+                    : "border-transparent hover:bg-orange-50 hover:border-orange-100"
+                }`}
+                style={category === cat.value ? {} : { color: "var(--text-secondary)" }}
+              >
+                <span>{cat.emoji}</span>
+                {cat.label}
+              </button>
+            ))}
+          </div>
+          {/* Sort dropdown */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            className="shrink-0 px-3 py-2 rounded-xl border text-sm font-semibold outline-none cursor-pointer transition-colors hover:border-orange-300 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+            style={{
+              background: "var(--bg-card)",
+              borderColor: "var(--border-color)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <option value="popular">🔥 Phổ biến</option>
+            <option value="price-asc">💲 Giá tăng dần</option>
+            <option value="price-desc">💰 Giá giảm dần</option>
+            <option value="rating">⭐ Đánh giá cao</option>
+          </select>
         </div>
+
+        {/* Recommendations skeleton while drinks load */}
+        {!search && category === "Tất cả" && isLoading && (
+          <section className="mb-8">
+            <div className="h-6 w-40 shimmer rounded-lg mb-4" />
+            <RecoRowSkeleton count={5} />
+          </section>
+        )}
 
         {/* Recommendations */}
         {!search && category === "Tất cả" && recommendations.length > 0 && !isLoading && (

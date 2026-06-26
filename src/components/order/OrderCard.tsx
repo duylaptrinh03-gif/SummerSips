@@ -9,17 +9,21 @@ import Image from "next/image";
 import { OrderTimeline } from "./OrderTimeline";
 import { useCartStore } from "@/store/useCartStore";
 import { useToastStore } from "@/store/useToastStore";
+import { useReviewStore } from "@/store/useReviewStore";
 import { taoCartId } from "@/utils/formatter";
 import { orderService } from "@/services/orderService";
 
 interface OrderCardProps {
   order: Order;
   isNew?: boolean;
+  onCancelled?: (orderId: string) => void;
+  onRate?: (order: Order) => void;
 }
 
-export function OrderCard({ order, isNew, onCancelled }: OrderCardProps & { onCancelled?: (orderId: string) => void }) {
+export function OrderCard({ order, isNew, onCancelled, onRate }: OrderCardProps) {
   const addItem = useCartStore((s) => s.addItem);
   const addToast = useToastStore((s) => s.addToast);
+  const isReviewed = useReviewStore((s) => s.hasReviewed(order._id));
   const [isCancelling, setIsCancelling] = useState(false);
 
   const handleReorder = () => {
@@ -232,6 +236,19 @@ export function OrderCard({ order, isNew, onCancelled }: OrderCardProps & { onCa
           >
             🔄 Đặt lại
           </button>
+          {order.status === "completed" && !isReviewed && onRate && (
+            <button
+              onClick={() => onRate(order)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors"
+            >
+              ⭐ Đánh giá
+            </button>
+          )}
+          {order.status === "completed" && isReviewed && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+              ✓ Đã đánh giá
+            </span>
+          )}
           {order.status === "pending" && (
             <button
               onClick={handleCancel}

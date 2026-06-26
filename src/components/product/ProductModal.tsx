@@ -3,12 +3,59 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { Star } from "lucide-react";
 import { Drink, ToppingOption, SizeName } from "@/types/drink";
 import { CartItem } from "@/types/cart";
-import { formatGia, taoCartId } from "@/utils/formatter";
+import { Review } from "@/types/review";
+import { formatGia, taoCartId, formatDate } from "@/utils/formatter";
+import { reviewService } from "@/services/reviewService";
 import { QuantityControl } from "../ui/QuantityControl";
 import { useCartStore } from "@/store/useCartStore";
 import { useToastStore } from "@/store/useToastStore";
+
+// ── Star display (read-only) ──────────────────────────────────────────────────
+function StarDisplay({ rating, size = 14 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Star
+          key={s}
+          size={size}
+          className={s <= Math.round(rating) ? "fill-orange-400 text-orange-400" : "text-gray-300"}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Single review row ─────────────────────────────────────────────────────────
+function ReviewRow({ review }: { review: Review }) {
+  const initial = review.userName?.[0]?.toUpperCase() ?? "?";
+  return (
+    <div className="flex gap-3">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-black text-white"
+        style={{ background: "linear-gradient(135deg, #f97316, #ec4899)" }}>
+        {initial}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+            {review.userName}
+          </span>
+          <StarDisplay rating={review.rating} size={12} />
+          <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>
+            {formatDate(review.createdAt)}
+          </span>
+        </div>
+        {review.comment && (
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            {review.comment}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface ProductModalProps {
   drink: Drink;
@@ -35,6 +82,20 @@ export function ProductModal({ drink, isOpen, onClose, allDrinks = [], onSelectD
   const [selectedToppings, setSelectedToppings] = useState<ToppingOption[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState("");
+
+  // Reviews
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !drink?._id) return;
+    setIsLoadingReviews(true);
+    reviewService
+      .getDrinkReviews(drink._id)
+      .then((res) => setReviews(Array.isArray(res?.data) ? res.data : []))
+      .catch(() => setReviews([]))
+      .finally(() => setIsLoadingReviews(false));
+  }, [drink?._id, isOpen]);
 
   // Prevent background scroll when modal is open
   useEffect(() => {
@@ -309,6 +370,50 @@ export function ProductModal({ drink, isOpen, onClose, allDrinks = [], onSelectD
                   </div>
                 </div>
               )}
+
+              {/* 6. Reviews */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold" style={{ color: "var(--text-primary)" }}>
+                    Đánh giá khách hàng
+                  </h3>
+                  {reviews.length > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      <StarDisplay rating={reviews.reduce((s, r) => s + r.rating, 0) / reviews.length} size={13} />
+                      <span className="text-xs font-bold" style={{ color: "var(--text-primary)" }}>
+                        {(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        ({reviews.length})
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {isLoadingReviews ? (
+                  <div className="space-y-3">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="flex gap-3 animate-pulse">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 w-24 bg-gray-200 rounded" />
+                          <div className="h-3 w-48 bg-gray-200 rounded" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <p className="text-sm text-center py-5" style={{ color: "var(--text-muted)" }}>
+                    Chưa có đánh giá. Hãy là người đầu tiên! 🌟
+                  </p>
+                ) : (
+                  <div className="space-y-4 max-h-[260px] overflow-y-auto pr-1">
+                    {reviews.slice(0, 10).map((review) => (
+                      <ReviewRow key={review._id} review={review} />
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="h-4" />
             </div>

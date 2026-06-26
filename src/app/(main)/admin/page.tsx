@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { adminService, AdminStats } from "@/services/adminService";
 import { ORDER_STATUS_LABEL, OrderStatus } from "@/types/order";
 import { formatGia } from "@/utils/formatter";
+import { AdminStatGridSkeleton } from "@/components/ui/Skeleton";
 import { useToastStore } from "@/store/useToastStore";
 import { useAdminOrderSocket } from "@/hooks/useAdminOrderSocket";
 
@@ -91,10 +92,10 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-secondary)" }}>
-        <div className="flex flex-col items-center gap-3">
-          <span className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>Đang tải dữ liệu...</p>
+      <div className="min-h-screen py-10" style={{ background: "var(--bg-secondary)" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="mb-8 h-9 w-56 shimmer rounded-xl" />
+          <AdminStatGridSkeleton />
         </div>
       </div>
     );
